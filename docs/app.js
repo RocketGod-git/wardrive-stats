@@ -274,9 +274,18 @@ function drawGlobe(countries) {
   const want = Math.min(ALL_LABELS.length, 90);
   while (NUM_POOL.length < want) { const n = document.createElement('div'); n.style.display = 'none'; GLOBE_NUM_OV.appendChild(n); NUM_POOL.push(n); }
   GLOBE.labelsData(ALL_LABELS);   // a dot on every labelable country; numbers come from the overlay
-  // Top spots pulse. DEFER the first feed by a beat: adding rings on the very first paint (before the globe's
-  // coord system settles) spams THREE "NaN radius" warnings; once it's ready, feed immediately on every refresh.
-  const feedRings = () => GLOBE.ringsData(ALL_LABELS.slice(0, 12).map(d => ({ lat: d.lat, lng: d.lng, f: heatFrac(d.users, max) })));
+  // SPREAD the pulses: walk countries biggest-first and keep a ring only if it's >22° (great-circle) from every
+  // ring already kept — so clustered regions (Europe) don't clump into a mess — capped at 5. Classy, not cluttered,
+  // and the biggest (US) always gets one. DEFER the first feed a beat so rings aren't built before the globe's
+  // coord system settles (that spammed THREE "NaN radius" warnings).
+  const COS_MIN = Math.cos(22 * Math.PI / 180);
+  const ringPts = [];
+  for (const d of ALL_LABELS) {
+    if (ringPts.length >= 5) break;
+    if (ringPts.some(c => frontCos(c.lat, c.lng, d.lat, d.lng) > COS_MIN)) continue;   // too close to an existing ring
+    ringPts.push({ lat: d.lat, lng: d.lng, f: heatFrac(d.users, max) });
+  }
+  const feedRings = () => GLOBE.ringsData(ringPts);
   if (RINGS_READY) feedRings(); else setTimeout(() => { RINGS_READY = true; feedRings(); }, 800);
   const applyPolys = (features) => GLOBE.polygonsData(features)
     .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? landColor(u, max) : 'rgba(28,44,49,0.26)'; })

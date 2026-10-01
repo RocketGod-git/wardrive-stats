@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- Capture-only page (NOT deployed): renders the REAL aurora-teal globe on a transparent canvas with
+     preserveDrawingBuffer so scripts/… can grab its pixels (window.capture()) for the OG card. Open it on the
+     local server, wait for window.OG_READY, call window.capture() → a transparent PNG dataURL of the sphere. -->
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#0c171a}#g{width:620px;height:620px}</style>
+<div id="g"></div>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
+<script>
+const mix = (a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
+const heatFrac = (u,max)=> max>1 ? Math.log1p(Math.max(0,u))/Math.log1p(max) : 0;
+const AURORA = [[10,70,60],[25,224,180],[150,255,214]];
+const landColor = (u,max)=>{const f=heatFrac(u,max)*(AURORA.length-1),i=Math.min(AURORA.length-2,Math.floor(f));const a=mix(AURORA[i],AURORA[i+1],f-i);return `rgba(${a[0]},${a[1]},${a[2]},0.82)`;};
+const isoOf = (f)=>(f.properties.ISO_A2||f.properties.ISO_A2_EH||'').toUpperCase();
+window.OG_READY = false;
+
+(async () => {
+  const stats = await fetch('data/stats.json?t='+Date.now()).then(r=>r.json());
+  const countries = (stats.ranges && (stats.ranges['28d']||stats.ranges['90d']) || {}).countries || [];
+  const byIso = {}; countries.forEach(c=>{ if(c.code) byIso[c.code.toUpperCase()]=c.users; });
+  const max = Math.max(...countries.map(c=>c.users),1);
+  const geo = await fetch('data/countries-110m.geojson').then(r=>r.json());
+
+  const G = Globe({ rendererConfig: { preserveDrawingBuffer:true, antialias:true, alpha:true } })(document.getElementById('g'))
+    .backgroundColor('rgba(0,0,0,0)')
+    .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-dark.jpg')
+    .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.24)
+    .width(620).height(620);
+  G.controls().autoRotate = false;
+  G.pointOfView({ lat: 26, lng: -52, altitude: 2.0 }, 0);   // Americas + Atlantic + W.Europe/Africa — lots of lit land
+  G.polygonsData(geo.features)
+    .polygonCapColor(f=>{const u=byIso[isoOf(f)]; return u ? landColor(u,max) : 'rgba(28,44,49,0.26)';})
+    .polygonSideColor(()=> 'rgba(0,0,0,0)')
+    .polygonStrokeColor(f=> byIso[isoOf(f)] ? 'rgba(140,255,222,0.6)' : 'rgba(90,120,120,0.16)')
+    .polygonAltitude(f=> byIso[isoOf(f)] ? 0.02 : 0.006).polygonsTransitionDuration(0);
+
+  // give the texture + polygons a moment to paint, then flag ready
+  setTimeout(()=>{ window.OG_READY = true; }, 2200);
+
+  // Capture: force a render in THIS tick, then read the drawing buffer as a transparent PNG.
+  window.capture = () => {
+    const r = G.renderer(); r.render(G.scene(), G.camera());
+    return r.domElement.toDataURL('image/png');
+  };
+})();
+</script>
