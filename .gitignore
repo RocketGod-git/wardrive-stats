@@ -1,0 +1,11 @@
+# Never commit a service-account key. The key lives ONLY as the GA4_SA GitHub Actions secret.
+*service-account*.json
+*credentials*.json
+ga4-sa*.json
+*-key.json
+key.json
+.env
+
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,70 @@
+name: Fetch GA4 stats
+
+# Pulls aggregate GA4 stats and commits docs/data/stats.json, which GitHub Pages serves.
+# Needs two repo secrets (Settings -> Secrets and variables -> Actions): GA4_SA (service-account JSON) and
+# GA4_PROPERTY_ID (the numeric GA4 property id). Until those exist the fetch is a graceful no-op (the sample
+# stats.json stays live). Nothing here ever prints or commits the key.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes (GitHub may delay/scatter scheduled runs under load)
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:                    # redeploy when the site/code changes — but NOT on the data commit (avoids a loop)
+      - 'scripts/**'
+      - 'docs/index.html'
+      - 'docs/app.js'
+      - 'docs/style.css'
+      - 'requirements.txt'
+      - '.github/workflows/stats.yml'
+
+concurrency:
+  group: stats
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Fetch stats
+        id: fetch
+        env:
+          GA4_SA: ${{ secrets.GA4_SA }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+        run: |
+          set +e
+          python scripts/fetch_stats.py
+          rc=$?
+          set -e
+          if [ "$rc" = "78" ]; then
+            echo "No GA4 secret configured yet — skipping (sample data stays live)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$rc" != "0" ]; then exit "$rc"; fi
+      - name: Commit if changed
+        if: steps.fetch.outputs.skip != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/data/stats.json; then
+            echo "No change in stats.json."
+          else
+            git add docs/data/stats.json
+            git commit -m "stats: refresh $(date -u +%FT%TZ) [skip ci]"
+            # Retry-safe push against a busy branch (other chats / the schedule).
+            for i in 1 2 3; do
+              git pull --rebase --autostash origin main && git push origin HEAD:main && break
+              sleep 4
+            done
+          fi

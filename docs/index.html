@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wardrive Go · Live Stats</title>
+<meta name="description" content="Aggregate, anonymous usage stats for the Wardrive Go app.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo"><span class="b">WARDRIVE</span> GO · STATS</div>
+    <div class="tagline">aggregate · anonymous · auto-refreshed</div>
+  </div>
+  <div class="spacer"></div>
+  <div id="sampleBadge" class="sample-badge" style="display:none">SAMPLE DATA</div>
+  <div class="stamp"><span class="dot"></span><span id="stamp">loading…</span></div>
+</header>
+
+<div id="content" style="display:none">
+  <!-- Realtime -->
+  <section>
+    <div class="realtime">
+      <h2 style="color:var(--accent)">⚡ Realtime · last 30 min</h2>
+      <div class="rt-top"><span class="big" id="rtUsers">—</span><span class="lbl">active users right now</span></div>
+      <div class="evlist" id="rtEvents"></div>
+    </div>
+  </section>
+
+  <!-- Headline cards -->
+  <section class="grid cards" id="cards"></section>
+
+  <!-- Charts -->
+  <section class="two">
+    <div class="panel"><h2>Activity · last 28 days</h2><div class="chartbox"><canvas id="tsChart"></canvas></div></div>
+    <div class="panel"><h2>Events · last 28 days</h2><div class="chartbox"><canvas id="evChart"></canvas></div></div>
+  </section>
+
+  <!-- Breakdowns -->
+  <section class="two">
+    <div class="panel"><h2>App versions</h2><div class="list" id="versions"></div></div>
+    <div class="panel"><h2>Countries</h2><div class="list" id="countries"></div></div>
+  </section>
+  <section class="two">
+    <div class="panel"><h2>Top devices</h2><div class="list" id="devices"></div></div>
+    <div class="panel"><h2>Android version</h2><div class="list" id="android"></div></div>
+  </section>
+</div>
+
+<div id="error" class="err" style="display:none"></div>
+
+<footer>
+  Wardrive Go — RocketGod · data via the Google Analytics Data API, refreshed by a scheduled job.
+  No personal data is collected or shown; counts are aggregate only.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
