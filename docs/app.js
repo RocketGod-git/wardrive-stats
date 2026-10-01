@@ -107,8 +107,12 @@ function render(d) {
     card('Engagement', fmt(t.engagementMinutes), 'minutes')
   ].join('');
 
+  // Tidy GA4's "(not set)" country (unresolved location — VPN/privacy) → "Unknown" for the list/legend.
+  // It has no centroid so it never plots on the globe regardless.
+  const countries = (d.countries || []).map(c => c.country === '(not set)' ? { ...c, country: 'Unknown' } : c);
+
   // Globe (the centerpiece — lights up by per-country active users)
-  drawGlobe(d.countries || []);
+  drawGlobe(countries);
 
   // Charts
   const ts = d.timeseries || [];
@@ -121,7 +125,7 @@ function render(d) {
   // Lists
   list($('screens'), d.screens, 'name', 'views');
   list($('versions'), d.versions, 'version', 'users');
-  list($('countries'), d.countries, 'country', 'users');
+  list($('countries'), countries, 'country', 'users');
   list($('devices'), d.devices, 'model', 'users');
   list($('android'), d.android, 'os', 'users');
 }
