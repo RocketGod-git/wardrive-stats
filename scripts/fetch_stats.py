@@ -135,9 +135,60 @@ def run():
         return [{key: x.dimension_values[0].value, "users": int(x.metric_values[0].value)} for x in rows(r)]
 
     versions = safe("versions", lambda: top("appVersion", "version"), [])
-    countries = safe("countries", lambda: top("country", "country"), [])
     devices = safe("devices", lambda: top("deviceModel", "model"), [])
     android = safe("android", lambda: top("operatingSystemWithVersion", "os"), [])
+
+    # Countries WITH ISO code (countryId) so the globe can place them on centroids.
+    def countries_fn():
+        r = c.run_report(RunReportRequest(property=p,
+            dimensions=[Dimension(name="country"), Dimension(name="countryId")],
+            metrics=[Metric(name="activeUsers")],
+            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")],
+            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="activeUsers"), desc=True)], limit=30))
+        return [{"country": x.dimension_values[0].value, "code": x.dimension_values[1].value,
+                 "users": int(x.metric_values[0].value)} for x in rows(r)]
+    countries = safe("countries", countries_fn, [])
+
+    # Hour-of-day (00-23, property timezone) — the "busiest hour" rhythm.
+    def hours_fn():
+        r = report(["hour"], ["activeUsers"], 28, limit=48, order_dim="hour")
+        m = {int(x.dimension_values[0].value): int(x.metric_values[0].value) for x in rows(r)}
+        return [{"h": h, "users": m.get(h, 0)} for h in range(24)]
+    hours = safe("hours", hours_fn, [])
+
+    # Day-of-week (0=Sun … 6=Sat) ordered Mon-first for the chart.
+    def weekdays_fn():
+        r = report(["dayOfWeek"], ["activeUsers"], 28, limit=10)
+        m = {int(x.dimension_values[0].value): int(x.metric_values[0].value) for x in rows(r)}
+        names = {0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat"}
+        order = [1, 2, 3, 4, 5, 6, 0]
+        return [{"d": names[i], "users": m.get(i, 0)} for i in order]
+    weekdays = safe("weekdays", weekdays_fn, [])
+
+    # Top screens by views.
+    def screens_fn():
+        r = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="unifiedScreenName")],
+            metrics=[Metric(name="screenPageViews")],
+            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")],
+            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)], limit=10))
+        return [{"name": x.dimension_values[0].value, "views": int(x.metric_values[0].value)} for x in rows(r)
+                if x.dimension_values[0].value not in ("(not set)", "")]
+    screens = safe("screens", screens_fn, [])
+
+    # New vs returning users.
+    def new_returning():
+        r = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="newVsReturning")],
+            metrics=[Metric(name="activeUsers")],
+            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")], limit=5))
+        out = {"new": 0, "returning": 0}
+        for x in rows(r):
+            k = x.dimension_values[0].value.lower()
+            if k.startswith("new"):
+                out["new"] = int(x.metric_values[0].value)
+            elif k.startswith("return"):
+                out["returning"] = int(x.metric_values[0].value)
+        return out
+    nr = safe("newReturning", new_returning, {"new": 0, "returning": 0})
 
     # ---- realtime (last 30 min) ----
     def realtime():
@@ -152,9 +203,9 @@ def run():
 
     out = {
         "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "realtime": rt_block, "active": active_block, "totals28d": totals_block,
-        "events28d": events_block, "timeseries": ts_block,
-        "versions": versions, "countries": countries, "devices": devices, "android": android,
+        "realtime": rt_block, "active": active_block, "totals28d": totals_block, "newReturning": nr,
+        "events28d": events_block, "timeseries": ts_block, "hours": hours, "weekdays": weekdays,
+        "screens": screens, "versions": versions, "countries": countries, "devices": devices, "android": android,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:

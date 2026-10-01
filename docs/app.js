@@ -29,6 +29,30 @@ const LABELS = {
 const pretty = (name) => LABELS[name] ||
   String(name || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+// ISO 3166-1 alpha-2 -> [lat, lng] country centroids, so the globe can light up a country by its GA4 countryId.
+// A broad-but-compact set; unknown codes are simply skipped (and still appear in the Countries list).
+const CENTROIDS = {
+  US:[39.8,-98.6],CA:[56.1,-106.3],MX:[23.6,-102.6],BR:[-14.2,-51.9],AR:[-38.4,-63.6],CL:[-35.7,-71.5],
+  CO:[4.6,-74.3],PE:[-9.2,-75.0],VE:[6.4,-66.6],GB:[55.4,-3.4],IE:[53.4,-8.2],FR:[46.2,2.2],ES:[40.5,-3.7],
+  PT:[39.4,-8.2],DE:[51.2,10.5],NL:[52.1,5.3],BE:[50.5,4.5],LU:[49.8,6.1],CH:[46.8,8.2],AT:[47.5,14.6],
+  IT:[41.9,12.6],PL:[51.9,19.1],CZ:[49.8,15.5],SK:[48.7,19.7],HU:[47.2,19.5],RO:[45.9,24.97],BG:[42.7,25.5],
+  GR:[39.1,21.8],HR:[45.1,15.2],RS:[44.0,21.0],SI:[46.2,15.0],SE:[60.1,18.6],NO:[60.5,8.5],FI:[61.9,25.7],
+  DK:[56.3,9.5],IS:[64.9,-19.0],EE:[58.6,25.0],LV:[56.9,24.6],LT:[55.2,23.9],UA:[48.4,31.2],BY:[53.7,27.9],
+  RU:[61.5,105.3],TR:[39.0,35.2],IL:[31.0,34.8],SA:[23.9,45.1],AE:[23.4,53.8],QA:[25.3,51.2],IN:[22.0,79.0],
+  PK:[30.4,69.3],BD:[23.7,90.4],LK:[7.9,80.8],CN:[35.9,104.2],JP:[36.2,138.3],KR:[36.5,127.9],TW:[23.7,121.0],
+  HK:[22.3,114.2],TH:[15.9,100.99],VN:[14.1,108.3],PH:[12.9,121.8],MY:[4.2,101.98],SG:[1.35,103.8],
+  ID:[-0.8,113.9],AU:[-25.3,133.8],NZ:[-41.8,171.8],ZA:[-30.6,22.9],EG:[26.8,30.8],MA:[31.8,-7.1],
+  NG:[9.1,8.7],KE:[-0.02,37.9]
+};
+
+function colorScale(frac) {  // accent2 (low) -> accent (mid) -> gold (hot)
+  const a = frac < 0.5
+    ? mix([22,192,255], [25,224,180], frac / 0.5)
+    : mix([25,224,180], [255,207,74], (frac - 0.5) / 0.5);
+  return `rgb(${a[0]},${a[1]},${a[2]})`;
+}
+function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+
 function ago(iso) {
   const t = Date.parse(iso); if (isNaN(t)) return iso || 'unknown';
   const s = Math.max(0, (Date.now() - t) / 1000);
@@ -83,16 +107,90 @@ function render(d) {
     card('Engagement', fmt(t.engagementMinutes), 'minutes')
   ].join('');
 
+  // Globe (the centerpiece — lights up by per-country active users)
+  drawGlobe(d.countries || []);
+
   // Charts
   const ts = d.timeseries || [];
   drawTimeseries(ts);
   drawEvents(d.events28d || []);
+  drawHours(d.hours || []);
+  drawDow(d.weekdays || []);
+  drawNewReturning(d.newReturning || {});
 
   // Lists
+  list($('screens'), d.screens, 'name', 'views');
   list($('versions'), d.versions, 'version', 'users');
   list($('countries'), d.countries, 'country', 'users');
   list($('devices'), d.devices, 'model', 'users');
   list($('android'), d.android, 'os', 'users');
+}
+
+let GLOBE;
+function drawGlobe(countries) {
+  const el = $('globe');
+  const pts = countries.map(c => {
+    const ll = CENTROIDS[(c.code || '').toUpperCase()];
+    return ll ? { country: c.country, users: c.users, lat: ll[0], lng: ll[1] } : null;
+  }).filter(Boolean);
+  const max = Math.max(...pts.map(p => p.users), 1);
+
+  // Legend: top 5 located countries.
+  $('globeLegend').innerHTML = pts.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(p =>
+    `<span class="chip"><span class="d" style="background:${colorScale(p.users / max)}"></span>${p.country} <b>${fmt(p.users)}</b></span>`).join('');
+
+  if (typeof Globe !== 'function') return;  // lib blocked/offline — legend + Countries list still cover it
+  const w = el.clientWidth || 600, h = el.clientHeight || 440;
+  if (!GLOBE) {
+    GLOBE = Globe()(el)
+      .backgroundColor('rgba(0,0,0,0)')
+      .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-dark.jpg')
+      .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18)
+      .pointLat('lat').pointLng('lng').pointResolution(2)
+      .pointColor(p => colorScale(p.users / max))
+      .pointAltitude(p => 0.03 + (p.users / max) * 0.55)
+      .pointRadius(p => 0.4 + (p.users / max) * 0.6)
+      .pointLabel(p => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2">
+        <b style="color:#19e0b4">${p.country}</b><br>${fmt(p.users)} active users</div>`);
+    GLOBE.controls().autoRotate = true;
+    GLOBE.controls().autoRotateSpeed = 0.55;
+    GLOBE.controls().enableZoom = true;
+    window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
+  }
+  GLOBE.width(w).height(h).pointsData(pts).pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);
+}
+
+function drawHours(hours) {
+  const peak = Math.max(...hours.map(h => h.users), 1);
+  new Chart($('hourChart'), {
+    type: 'bar',
+    data: { labels: hours.map(h => String(h.h).padStart(2, '0')), datasets: [{ data: hours.map(h => h.users),
+      backgroundColor: hours.map(h => h.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: baseAxis(), y: baseAxis() } }
+  });
+}
+
+function drawDow(wd) {
+  const peak = Math.max(...wd.map(d => d.users), 1);
+  new Chart($('dowChart'), {
+    type: 'bar',
+    data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users),
+      backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: baseAxis(), y: baseAxis() } }
+  });
+}
+
+function drawNewReturning(nr) {
+  const n = nr.new || 0, r = nr.returning || 0;
+  new Chart($('nrChart'), {
+    type: 'doughnut',
+    data: { labels: ['New users', 'Returning'], datasets: [{ data: [n, r],
+      backgroundColor: [ACCENT, 'rgba(22,192,255,.55)'], borderColor: '#0e1619', borderWidth: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } }
+  });
 }
 
 function baseAxis(extra) {

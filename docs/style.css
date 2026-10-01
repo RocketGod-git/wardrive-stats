@@ -40,6 +40,15 @@ h2{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mute
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:760px){.two{grid-template-columns:1fr}}
 canvas{max-width:100%}
+.globe-panel{overflow:hidden}
+#globe{height:440px;display:flex;align-items:center;justify-content:center;cursor:grab}
+#globe canvas{display:block}
+@media(max-width:600px){#globe{height:340px}}
+.globe-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.globe-legend .chip{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);
+  background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.globe-legend .chip b{color:var(--ink)}
+.globe-legend .d{width:8px;height:8px;border-radius:50%}
 .chartbox{position:relative;height:240px}
 .chartbox canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
 

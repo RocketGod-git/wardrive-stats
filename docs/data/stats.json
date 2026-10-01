@@ -17,6 +17,7 @@
   },
   "active": { "d1": 34, "d7": 181, "d28": 426 },
   "totals28d": { "events": 50284, "sessions": 1243, "newUsers": 92, "engagementMinutes": 5412 },
+  "newReturning": { "new": 92, "returning": 334 },
   "events28d": [
     { "name": "notable_spotted", "count": 9820 },
     { "name": "capture", "count": 4110 },
@@ -25,9 +26,13 @@
     { "name": "session_start", "count": 1243 },
     { "name": "adapter_engaged", "count": 980 },
     { "name": "upload", "count": 612 },
+    { "name": "sdr_connected", "count": 410 },
     { "name": "drone_detected", "count": 288 },
     { "name": "notable_aircraft", "count": 171 },
+    { "name": "cluster_linked", "count": 88 },
+    { "name": "export", "count": 77 },
     { "name": "capture_cracked", "count": 44 },
+    { "name": "language_set", "count": 31 },
     { "name": "secret_unlock", "count": 19 }
   ],
   "timeseries": [
@@ -41,6 +46,27 @@
     { "date": "2026-09-29", "activeUsers": 98, "events": 2560, "notable": 548, "captures": 182 },
     { "date": "2026-09-30", "activeUsers": 112, "events": 2980, "notable": 631, "captures": 205 }
   ],
+  "hours": [
+    { "h": 0, "users": 22 }, { "h": 1, "users": 15 }, { "h": 2, "users": 11 }, { "h": 3, "users": 8 },
+    { "h": 4, "users": 7 }, { "h": 5, "users": 9 }, { "h": 6, "users": 14 }, { "h": 7, "users": 24 },
+    { "h": 8, "users": 38 }, { "h": 9, "users": 47 }, { "h": 10, "users": 52 }, { "h": 11, "users": 58 },
+    { "h": 12, "users": 61 }, { "h": 13, "users": 64 }, { "h": 14, "users": 60 }, { "h": 15, "users": 66 },
+    { "h": 16, "users": 72 }, { "h": 17, "users": 81 }, { "h": 18, "users": 88 }, { "h": 19, "users": 79 },
+    { "h": 20, "users": 68 }, { "h": 21, "users": 54 }, { "h": 22, "users": 41 }, { "h": 23, "users": 30 }
+  ],
+  "weekdays": [
+    { "d": "Mon", "users": 164 }, { "d": "Tue", "users": 158 }, { "d": "Wed", "users": 171 },
+    { "d": "Thu", "users": 183 }, { "d": "Fri", "users": 205 }, { "d": "Sat", "users": 248 },
+    { "d": "Sun", "users": 232 }
+  ],
+  "screens": [
+    { "name": "Dashboard", "views": 6120 },
+    { "name": "Field Report", "views": 2140 },
+    { "name": "Map", "views": 1510 },
+    { "name": "Offensive Devices", "views": 980 },
+    { "name": "ADS-B", "views": 870 },
+    { "name": "Settings", "views": 540 }
+  ],
   "versions": [
     { "version": "3.1.49", "users": 214 },
     { "version": "3.1.48", "users": 96 },
@@ -49,11 +75,14 @@
     { "version": "3.0.298", "users": 27 }
   ],
   "countries": [
-    { "country": "United States", "users": 221 },
-    { "country": "Netherlands", "users": 44 },
-    { "country": "Germany", "users": 38 },
-    { "country": "United Kingdom", "users": 29 },
-    { "country": "Canada", "users": 25 }
+    { "country": "United States", "code": "US", "users": 221 },
+    { "country": "Netherlands", "code": "NL", "users": 44 },
+    { "country": "Germany", "code": "DE", "users": 38 },
+    { "country": "United Kingdom", "code": "GB", "users": 29 },
+    { "country": "Canada", "code": "CA", "users": 25 },
+    { "country": "Australia", "code": "AU", "users": 18 },
+    { "country": "France", "code": "FR", "users": 14 },
+    { "country": "Japan", "code": "JP", "users": 11 }
   ],
   "devices": [
     { "model": "Pixel 9 Pro", "users": 41 },

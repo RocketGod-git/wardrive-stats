@@ -31,6 +31,15 @@
     </div>
   </section>
 
+  <!-- Globe -->
+  <section>
+    <div class="panel globe-panel">
+      <h2>🌍 Wardrivers worldwide · active users · last 28 days</h2>
+      <div id="globe"></div>
+      <div id="globeLegend" class="globe-legend"></div>
+    </div>
+  </section>
+
   <!-- Headline cards -->
   <section class="grid cards" id="cards"></section>
 
@@ -38,6 +47,18 @@
   <section class="two">
     <div class="panel"><h2>Activity · last 28 days</h2><div class="chartbox"><canvas id="tsChart"></canvas></div></div>
     <div class="panel"><h2>Events · last 28 days</h2><div class="chartbox"><canvas id="evChart"></canvas></div></div>
+  </section>
+
+  <!-- Rhythm -->
+  <section class="two">
+    <div class="panel"><h2>Busiest hour · UTC</h2><div class="chartbox"><canvas id="hourChart"></canvas></div></div>
+    <div class="panel"><h2>Busiest day</h2><div class="chartbox"><canvas id="dowChart"></canvas></div></div>
+  </section>
+
+  <!-- Screens + audience -->
+  <section class="two">
+    <div class="panel"><h2>Top screens</h2><div class="list" id="screens"></div></div>
+    <div class="panel"><h2>Audience · 28 days</h2><div class="chartbox"><canvas id="nrChart"></canvas></div></div>
   </section>
 
   <!-- Breakdowns -->
@@ -59,6 +80,7 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
