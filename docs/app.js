@@ -4,6 +4,31 @@ const ACCENT = '#19e0b4', ACCENT2 = '#16c0ff', MUTED = '#7d97a0', GRID = '#1f2e3
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('en-US'));
 
+// Human labels for raw GA4 event names. Unknown events fall back to Title-Cased snake_case so a newly-added
+// app event still reads cleanly before it's added here.
+const LABELS = {
+  notable_spotted: 'Notable devices found',
+  notable_aircraft: 'Notable aircraft',
+  drone_detected: 'Drones detected',
+  capture: 'Handshakes / PMKIDs captured',
+  capture_cracked: 'Passwords cracked',
+  upload: 'Uploads',
+  adapter_engaged: 'Wi-Fi adapters engaged',
+  sdr_connected: 'SDR sessions',
+  cluster_linked: 'Mesh cluster links',
+  language_set: 'Language changed',
+  export: 'Data exports',
+  tool_opened: 'Tools opened',
+  secret_unlock: 'Secret unlocks',
+  app_version_active: 'Active app versions',
+  session_start: 'Sessions started',
+  screen_view: 'Screens viewed',
+  user_engagement: 'User engagement',
+  first_open: 'New installs'
+};
+const pretty = (name) => LABELS[name] ||
+  String(name || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
 function ago(iso) {
   const t = Date.parse(iso); if (isNaN(t)) return iso || 'unknown';
   const s = Math.max(0, (Date.now() - t) / 1000);
@@ -43,7 +68,7 @@ function render(d) {
   const emax = Math.max(...evs.map(e => e.count || 0), 1);
   $('rtEvents').innerHTML = evs.map(e => `
     <div class="evrow"><div style="flex:1">
-      <div style="display:flex"><span class="nm">${e.name}</span><span class="ct">${fmt(e.count)}</span></div>
+      <div style="display:flex"><span class="nm">${pretty(e.name)}</span><span class="ct">${fmt(e.count)}</span></div>
       <div class="bar" style="width:${Math.round((e.count/emax)*100)}%"></div>
     </div></div>`).join('') || '<div class="sub">quiet right now</div>';
 
@@ -92,7 +117,7 @@ function drawEvents(evs) {
   const top = evs.slice(0, 11);
   new Chart($('evChart'), {
     type: 'bar',
-    data: { labels: top.map(e => e.name), datasets: [{ data: top.map(e => e.count),
+    data: { labels: top.map(e => pretty(e.name)), datasets: [{ data: top.map(e => e.count),
       backgroundColor: top.map((_, i) => i === 0 ? ACCENT : 'rgba(22,192,255,.55)'), borderRadius: 5 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
