@@ -148,8 +148,8 @@ function drawGlobe(countries) {
       .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18)
       .pointLat('lat').pointLng('lng').pointResolution(2)
       .pointColor(p => colorScale(p.users / max))
-      .pointAltitude(p => 0.03 + (p.users / max) * 0.55)
-      .pointRadius(p => 0.4 + (p.users / max) * 0.6)
+      .pointAltitude(p => 0.02 + (p.users / max) * 0.20)
+      .pointRadius(p => 0.6 + (p.users / max) * 0.7)
       .pointLabel(p => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2">
         <b style="color:#19e0b4">${p.country}</b><br>${fmt(p.users)} active users</div>`);
     GLOBE.controls().autoRotate = true;
