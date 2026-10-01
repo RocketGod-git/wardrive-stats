@@ -1,36 +1,24 @@
 // Wardrive Go stats dashboard — renders docs/data/stats.json (committed by the scheduled GA4 fetch).
-// Pure client-side, no secrets. Cache-busted so the in-app WebView always gets the freshest commit.
+// Pure client-side, no secrets. Semi-live: re-polls the STATIC json every 90s (zero GA4 cost — cost is bounded
+// by the cron, not by viewers). A range selector (24h/7d/28d/90d) switches the whole board client-side; the
+// realtime (last 30 min) block is always on top.
 const ACCENT = '#19e0b4', ACCENT2 = '#16c0ff', MUTED = '#7d97a0', GRID = '#1f2e33';
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('en-US'));
+const show = (id) => { const e = $(id); if (e) e.style.display = ''; };
+const hide = (id) => { const e = $(id); if (e) e.style.display = 'none'; };
 
-// Human labels for raw GA4 event names. Unknown events fall back to Title-Cased snake_case so a newly-added
-// app event still reads cleanly before it's added here.
 const LABELS = {
-  notable_spotted: 'Notable devices found',
-  notable_aircraft: 'Notable aircraft',
-  drone_detected: 'Drones detected',
-  capture: 'Handshakes / PMKIDs captured',
-  capture_cracked: 'Passwords cracked',
-  upload: 'Uploads',
-  adapter_engaged: 'Wi-Fi adapters engaged',
-  sdr_connected: 'SDR sessions',
-  cluster_linked: 'Mesh cluster links',
-  language_set: 'Language changed',
-  export: 'Data exports',
-  tool_opened: 'Tools opened',
-  secret_unlock: 'Secret unlocks',
-  app_version_active: 'Active app versions',
-  session_start: 'Sessions started',
-  screen_view: 'Screens viewed',
-  user_engagement: 'User engagement',
-  first_open: 'New installs'
+  notable_spotted: 'Notable devices found', notable_aircraft: 'Notable aircraft', drone_detected: 'Drones detected',
+  capture: 'Handshakes / PMKIDs captured', capture_cracked: 'Passwords cracked', upload: 'Uploads',
+  adapter_engaged: 'Wi-Fi adapters engaged', sdr_connected: 'SDR sessions', cluster_linked: 'Mesh cluster links',
+  language_set: 'Language changed', export: 'Data exports', tool_opened: 'Tools opened', secret_unlock: 'Secret unlocks',
+  app_version_active: 'Active app versions', session_start: 'Sessions started', screen_view: 'Screens viewed',
+  user_engagement: 'User engagement', first_open: 'New installs', app_update: 'App updated', app_remove: 'Uninstalls',
+  os_update: 'OS updated', app_exception: 'Crashes', app_clear_data: 'Data cleared'
 };
-const pretty = (name) => LABELS[name] ||
-  String(name || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const pretty = (name) => LABELS[name] || String(name || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-// ISO 3166-1 alpha-2 -> [lat, lng] country centroids, so the globe can light up a country by its GA4 countryId.
-// A broad-but-compact set; unknown codes are simply skipped (and still appear in the Countries list).
 const CENTROIDS = {
   US:[39.8,-98.6],CA:[56.1,-106.3],MX:[23.6,-102.6],BR:[-14.2,-51.9],AR:[-38.4,-63.6],CL:[-35.7,-71.5],
   CO:[4.6,-74.3],PE:[-9.2,-75.0],VE:[6.4,-66.6],GB:[55.4,-3.4],IE:[53.4,-8.2],FR:[46.2,2.2],ES:[40.5,-3.7],
@@ -44,14 +32,13 @@ const CENTROIDS = {
   ID:[-0.8,113.9],AU:[-25.3,133.8],NZ:[-41.8,171.8],ZA:[-30.6,22.9],EG:[26.8,30.8],MA:[31.8,-7.1],
   NG:[9.1,8.7],KE:[-0.02,37.9]
 };
-
-function colorScale(frac) {  // accent2 (low) -> accent (mid) -> gold (hot)
-  const a = frac < 0.5
-    ? mix([22,192,255], [25,224,180], frac / 0.5)
-    : mix([25,224,180], [255,207,74], (frac - 0.5) / 0.5);
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const colorScale = (frac) => {
+  const a = frac < 0.5 ? mix([22,192,255],[25,224,180], frac/0.5) : mix([25,224,180],[255,207,74],(frac-0.5)/0.5);
   return `rgb(${a[0]},${a[1]},${a[2]})`;
-}
-function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+};
+const rgba = (rgb, a) => rgb.replace('rgb(', 'rgba(').replace(')', `,${a})`);
+const isoOf = (f) => (f.properties.ISO_A2 || f.properties.ISO_A2_EH || '').toUpperCase();
 
 function ago(iso) {
   const t = Date.parse(iso); if (isNaN(t)) return iso || 'unknown';
@@ -61,198 +48,173 @@ function ago(iso) {
   if (s < 86400) return `${Math.round(s/3600)} h ago`;
   return `${Math.round(s/86400)} d ago`;
 }
-
 function card(k, v, sub, accent) {
-  return `<div class="card"><div class="k">${k}</div>
-    <div class="v${accent ? ' accent' : ''}">${v}</div>
-    ${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+  return `<div class="card"><div class="k">${k}</div><div class="v${accent ? ' accent' : ''}">${v}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
 }
-
 function list(el, rows, nameKey, countKey, unit) {
+  if (!el) return;
   if (!rows || !rows.length) { el.innerHTML = `<div class="sub" style="color:var(--muted)">no data yet</div>`; return; }
   const max = Math.max(...rows.map(r => r[countKey] || 0)) || 1;
   el.innerHTML = rows.map(r => {
     const pct = Math.round(((r[countKey] || 0) / max) * 100);
-    return `<div class="row">
-      <span class="nm">${String(r[nameKey] ?? '—')}</span>
-      <span class="track"><span class="fill" style="width:${pct}%"></span></span>
-      <span class="ct">${fmt(r[countKey])}${unit || ''}</span></div>`;
+    return `<div class="row"><span class="nm">${String(r[nameKey] ?? '—')}</span><span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="ct">${fmt(r[countKey])}${unit || ''}</span></div>`;
   }).join('');
 }
 
+// ---- state ----
+let DATA = null, RANGE = '28d';
+const RANGE_ORDER = [['1d', '24h'], ['7d', '7 days'], ['28d', '28 days'], ['90d', '90 days']];
+
+function legacyRange(d) {   // backward-compat for the pre-"ranges" schema (brief deploy gap)
+  return { totals: { active: (d.active || {}).d28, events: (d.totals28d || {}).events, sessions: (d.totals28d || {}).sessions,
+      newUsers: (d.totals28d || {}).newUsers, engagementMinutes: (d.totals28d || {}).engagementMinutes },
+    newReturning: d.newReturning || {}, events: d.events28d || [], countries: d.countries || [], cities: [],
+    versions: d.versions || [], devices: d.devices || [], android: d.android || [], languages: [],
+    hours: d.hours || [], weekdays: d.weekdays || [], screens: d.screens || [], timeseries: d.timeseries || [] };
+}
+function currentRange() {
+  if (DATA.ranges) {
+    if (!DATA.ranges[RANGE]) RANGE = DATA.ranges['28d'] ? '28d' : Object.keys(DATA.ranges)[0];
+    return DATA.ranges[RANGE] || {};
+  }
+  return legacyRange(DATA);
+}
+
 function render(d) {
+  DATA = d;
   $('content').style.display = '';
   $('stamp').textContent = 'updated ' + ago(d.generatedAt);
-  if (d.sample) $('sampleBadge').style.display = '';
+  $('sampleBadge').style.display = d.sample ? '' : 'none';
+  renderRealtime(d.realtime || {});
+  buildRangeChips(d);
+  renderRange();
+}
 
-  // Realtime
-  const rt = d.realtime || {};
+function renderRealtime(rt) {
   $('rtUsers').textContent = fmt(rt.activeUsers);
   const evs = rt.events || [];
   const emax = Math.max(...evs.map(e => e.count || 0), 1);
   $('rtEvents').innerHTML = evs.map(e => `
     <div class="evrow"><div style="flex:1">
       <div style="display:flex"><span class="nm">${pretty(e.name)}</span><span class="ct">${fmt(e.count)}</span></div>
-      <div class="bar" style="width:${Math.round((e.count/emax)*100)}%"></div>
-    </div></div>`).join('') || '<div class="sub">quiet right now</div>';
-
-  // Headline cards
-  const a = d.active || {}, t = d.totals28d || {};
-  $('cards').innerHTML = [
-    card('Active · today', fmt(a.d1), 'users', true),
-    card('Active · 7 days', fmt(a.d7), 'users'),
-    card('Active · 28 days', fmt(a.d28), 'users'),
-    card('Events · 28 days', fmt(t.events), 'logged'),
-    card('Sessions · 28 days', fmt(t.sessions), ''),
-    card('Engagement', fmt(t.engagementMinutes), 'minutes')
-  ].join('');
-
-  // Tidy GA4's "(not set)" country (unresolved location — VPN/privacy) → "Unknown" for the list/legend.
-  // It has no centroid so it never plots on the globe regardless.
-  const countries = (d.countries || []).map(c => c.country === '(not set)' ? { ...c, country: 'Unknown' } : c);
-
-  // Globe (the centerpiece — lights up by per-country active users)
-  drawGlobe(countries);
-
-  // Charts
-  const ts = d.timeseries || [];
-  drawTimeseries(ts);
-  drawEvents(d.events28d || []);
-  drawHours(d.hours || []);
-  drawDow(d.weekdays || []);
-  drawNewReturning(d.newReturning || {});
-
-  // Lists
-  list($('screens'), d.screens, 'name', 'views');
-  list($('versions'), d.versions, 'version', 'users');
-  list($('countries'), countries, 'country', 'users');
-  list($('devices'), d.devices, 'model', 'users');
-  list($('android'), d.android, 'os', 'users');
+      <div class="bar" style="width:${Math.round((e.count/emax)*100)}%"></div></div></div>`).join('') || '<div class="sub">quiet right now</div>';
 }
 
-const rgba = (rgb, a) => rgb.replace('rgb(', 'rgba(').replace(')', `,${a})`);
-const isoOf = (f) => (f.properties.ISO_A2 || f.properties.ISO_A2_EH || '').toUpperCase();
+function buildRangeChips(d) {
+  const el = $('rangeSel');
+  if (!d.ranges) { el.innerHTML = ''; return; }
+  const avail = RANGE_ORDER.filter(([k]) => d.ranges[k]);
+  if (!avail.some(([k]) => k === RANGE)) RANGE = d.ranges['28d'] ? '28d' : (avail[0] || ['28d'])[0];
+  el.innerHTML = avail.map(([k, lbl]) => `<button class="rchip${k === RANGE ? ' on' : ''}" data-r="${k}">${lbl}</button>`).join('');
+  el.querySelectorAll('.rchip').forEach(b => b.onclick = () => { RANGE = b.dataset.r; buildRangeChips(DATA); renderRange(); });
+}
+
+function renderRange() {
+  const r = currentRange(), t = r.totals || {};
+  $('rangeTitle').textContent = (r.label || '28 days');
+  $('cards').innerHTML = [
+    card('Active users', fmt(t.active), 'in range', true),
+    card('Events', fmt(t.events), ''),
+    card('Sessions', fmt(t.sessions), ''),
+    card('New users', fmt(t.newUsers), ''),
+    card('Avg engagement', t.avgEngagementSec ? t.avgEngagementSec + 's' : '—', 'per user'),
+    card('Events / session', t.eventsPerSession != null ? t.eventsPerSession : '—', ''),
+    card('Engaged', t.engagementRate != null ? t.engagementRate + '%' : '—', 'sessions'),
+    card('Engagement', fmt(t.engagementMinutes), 'minutes')
+  ].join('');
+  drawGlobe(r.countries || []);
+  drawEvents(r.events || []);
+  if ((r.timeseries || []).length) { show('tsPanel'); drawTimeseries(r.timeseries); } else hide('tsPanel');
+  drawHours(r.hours || []); drawDow(r.weekdays || []); drawNewReturning(r.newReturning || {});
+  list($('screens'), r.screens, 'name', 'views');
+  list($('versions'), r.versions, 'version', 'users');
+  list($('countries'), r.countries, 'country', 'users');
+  list($('cities'), r.cities, 'city', 'users');
+  list($('devices'), r.devices, 'model', 'users');
+  list($('android'), r.android, 'os', 'users');
+  list($('languages'), r.languages, 'language', 'users');
+}
+
+// ---- charts (destroy-before-recreate so range switches + polls don't leak or collide) ----
+const CHARTS = {};
+const mkChart = (id, cfg) => { const c = $(id); if (!c) return; CHARTS[id]?.destroy(); CHARTS[id] = new Chart(c, cfg); };
+const baseAxis = (extra) => Object.assign({ grid: { color: GRID }, ticks: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 } } }, extra || {});
+
+function drawTimeseries(ts) {
+  mkChart('tsChart', { type: 'line',
+    data: { labels: ts.map(p => p.date.slice(5)), datasets: [
+      { label: 'active users', data: ts.map(p => p.activeUsers), borderColor: ACCENT, backgroundColor: 'rgba(25,224,180,.12)', fill: true, tension: .35, pointRadius: 0, borderWidth: 2, yAxisID: 'y' },
+      { label: 'notable spotted', data: ts.map(p => p.notable), borderColor: ACCENT2, backgroundColor: 'transparent', tension: .35, pointRadius: 0, borderWidth: 2, yAxisID: 'y1' } ] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 10 } } },
+      scales: { x: baseAxis(), y: baseAxis({ position: 'left' }), y1: baseAxis({ position: 'right', grid: { drawOnChartArea: false, color: GRID } }) } } });
+}
+function drawEvents(evs) {
+  const top = evs.slice(0, 12);
+  mkChart('evChart', { type: 'bar',
+    data: { labels: top.map(e => pretty(e.name)), datasets: [{ data: top.map(e => e.count), backgroundColor: top.map((_, i) => i === 0 ? ACCENT : 'rgba(22,192,255,.55)'), borderRadius: 5 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
+}
+function drawHours(hours) {
+  const peak = Math.max(...hours.map(h => h.users), 1);
+  mkChart('hourChart', { type: 'bar',
+    data: { labels: hours.map(h => String(h.h).padStart(2, '0')), datasets: [{ data: hours.map(h => h.users), backgroundColor: hours.map(h => h.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
+}
+function drawDow(wd) {
+  const peak = Math.max(...wd.map(d => d.users), 1);
+  mkChart('dowChart', { type: 'bar',
+    data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users), backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
+}
+function drawNewReturning(nr) {
+  mkChart('nrChart', { type: 'doughnut',
+    data: { labels: ['New users', 'Returning'], datasets: [{ data: [nr.new || 0, nr.returning || 0], backgroundColor: [ACCENT, 'rgba(22,192,255,.55)'], borderColor: '#0e1619', borderWidth: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } } });
+}
+
+// ---- globe: country borders + choropleth + floating live numbers ----
 let GLOBE, GEO;
 function drawGlobe(countries) {
   const el = $('globe');
-  const byIso = {};
-  countries.forEach(c => { if (c.code) byIso[c.code.toUpperCase()] = c.users; });
+  const byIso = {}; countries.forEach(c => { if (c.code) byIso[c.code.toUpperCase()] = c.users; });
   const max = Math.max(...countries.map(c => c.users), 1);
-  // Floating live NUMBERS, one per country with a known centroid.
-  const labels = countries.map(c => {
-    const ll = CENTROIDS[(c.code || '').toUpperCase()];
-    return ll ? { country: c.country, code: c.code, users: c.users, lat: ll[0], lng: ll[1] } : null;
-  }).filter(Boolean);
-
-  // Legend: top 5.
+  const labels = countries.map(c => { const ll = CENTROIDS[(c.code || '').toUpperCase()]; return ll ? { country: c.country, users: c.users, lat: ll[0], lng: ll[1] } : null; }).filter(Boolean);
   $('globeLegend').innerHTML = countries.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(c =>
     `<span class="chip"><span class="d" style="background:${colorScale(c.users / max)}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
-
-  if (typeof Globe !== 'function') return;  // lib blocked/offline — legend + Countries list still cover it
+  if (typeof Globe !== 'function') return;
   const w = el.clientWidth || 600, h = el.clientHeight || 440;
   if (!GLOBE) {
-    GLOBE = Globe()(el)
-      .backgroundColor('rgba(0,0,0,0)')
+    GLOBE = Globe()(el).backgroundColor('rgba(0,0,0,0)')
       .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-dark.jpg')
       .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18);
-    GLOBE.controls().autoRotate = true;
-    GLOBE.controls().autoRotateSpeed = 0.5;
-    GLOBE.controls().enableZoom = true;
+    GLOBE.controls().autoRotate = true; GLOBE.controls().autoRotateSpeed = 0.5; GLOBE.controls().enableZoom = true;
     window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
   }
   GLOBE.width(w).height(h).pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);
-
-  // Floating NUMBERS (dynamic, per country).
-  GLOBE.labelsData(labels)
-    .labelLat(d => d.lat).labelLng(d => d.lng)
-    .labelText(d => fmt(d.users))
-    .labelColor(d => colorScale(d.users / max))
-    .labelSize(d => 1.7 + Math.sqrt(d.users / max) * 2.0)   // sqrt + floor so small counts stay readable
-    .labelDotRadius(d => 0.45 + Math.sqrt(d.users / max) * 0.5)
-    .labelResolution(2).labelAltitude(0.013)
+  GLOBE.labelsData(labels).labelLat(d => d.lat).labelLng(d => d.lng).labelText(d => fmt(d.users))
+    .labelColor(d => colorScale(d.users / max)).labelSize(d => 2.8 + Math.sqrt(d.users / max) * 1.6)
+    .labelDotRadius(d => 0.5 + Math.sqrt(d.users / max) * 0.4).labelResolution(2).labelAltitude(0.013)
     .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
-
-  // Country BORDERS + choropleth fill (active countries glow in their magnitude colour; the rest are faint).
   const applyPolys = (features) => GLOBE.polygonsData(features)
     .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(u / max), 0.55) : 'rgba(28,44,49,0.28)'; })
-    .polygonSideColor(() => 'rgba(0,0,0,0)')
-    .polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
-    .polygonAltitude(f => byIso[isoOf(f)] ? 0.014 : 0.006)
-    .polygonsTransitionDuration(300)
+    .polygonSideColor(() => 'rgba(0,0,0,0)').polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
+    .polygonAltitude(f => byIso[isoOf(f)] ? 0.014 : 0.006).polygonsTransitionDuration(300)
     .polygonLabel(f => { const u = byIso[isoOf(f)]; return u ? `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${f.properties.ADMIN}</b><br>${fmt(u)} active users</div>` : '' });
   if (GEO) applyPolys(GEO);
   else fetch('data/countries-110m.geojson').then(r => r.json()).then(j => { GEO = j.features; applyPolys(GEO); }).catch(() => {});
 }
 
-function drawHours(hours) {
-  const peak = Math.max(...hours.map(h => h.users), 1);
-  new Chart($('hourChart'), {
-    type: 'bar',
-    data: { labels: hours.map(h => String(h.h).padStart(2, '0')), datasets: [{ data: hours.map(h => h.users),
-      backgroundColor: hours.map(h => h.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-      scales: { x: baseAxis(), y: baseAxis() } }
-  });
+// ---- load + semi-live refresh ----
+function load() {
+  fetch('data/stats.json?t=' + Date.now())
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(render)
+    .catch(e => {
+      if (DATA) return;  // keep showing the last good data on a transient poll failure
+      $('error').style.display = ''; $('error').textContent = 'Could not load stats.json — ' + e.message + '.';
+      $('stamp').textContent = 'error';
+    });
 }
-
-function drawDow(wd) {
-  const peak = Math.max(...wd.map(d => d.users), 1);
-  new Chart($('dowChart'), {
-    type: 'bar',
-    data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users),
-      backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-      scales: { x: baseAxis(), y: baseAxis() } }
-  });
-}
-
-function drawNewReturning(nr) {
-  const n = nr.new || 0, r = nr.returning || 0;
-  new Chart($('nrChart'), {
-    type: 'doughnut',
-    data: { labels: ['New users', 'Returning'], datasets: [{ data: [n, r],
-      backgroundColor: [ACCENT, 'rgba(22,192,255,.55)'], borderColor: '#0e1619', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '62%',
-      plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } }
-  });
-}
-
-function baseAxis(extra) {
-  return Object.assign({ grid: { color: GRID }, ticks: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 } } }, extra || {});
-}
-
-function drawTimeseries(ts) {
-  const labels = ts.map(p => p.date.slice(5));
-  new Chart($('tsChart'), {
-    type: 'line',
-    data: { labels, datasets: [
-      { label: 'active users', data: ts.map(p => p.activeUsers), borderColor: ACCENT, backgroundColor: 'rgba(25,224,180,.12)', fill: true, tension: .35, pointRadius: 0, borderWidth: 2, yAxisID: 'y' },
-      { label: 'notable spotted', data: ts.map(p => p.notable), borderColor: ACCENT2, backgroundColor: 'transparent', tension: .35, pointRadius: 0, borderWidth: 2, yAxisID: 'y1' }
-    ]},
-    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 10 } } },
-      scales: { x: baseAxis(), y: baseAxis({ position: 'left' }), y1: baseAxis({ position: 'right', grid: { drawOnChartArea: false, color: GRID } }) } }
-  });
-}
-
-function drawEvents(evs) {
-  const top = evs.slice(0, 11);
-  new Chart($('evChart'), {
-    type: 'bar',
-    data: { labels: top.map(e => pretty(e.name)), datasets: [{ data: top.map(e => e.count),
-      backgroundColor: top.map((_, i) => i === 0 ? ACCENT : 'rgba(22,192,255,.55)'), borderRadius: 5 }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: baseAxis(), y: baseAxis() } }
-  });
-}
-
-fetch('data/stats.json?t=' + Date.now())
-  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-  .then(render)
-  .catch(e => {
-    $('error').style.display = '';
-    $('error').textContent = 'Could not load stats.json — ' + e.message +
-      '. If this is a fresh deploy, the scheduled job hasn’t run yet (or the GA4 secret isn’t set).';
-    $('stamp').textContent = 'error';
-  });
+load();
+setInterval(load, 90000);   // semi-live: re-poll the static JSON every 90s (no GA4 cost)

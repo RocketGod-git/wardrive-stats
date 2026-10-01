@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Fetch aggregate Wardrive Go stats from the Google Analytics Data API (GA4) and write docs/data/stats.json
-for the static dashboard. Runs in CI (see .github/workflows/stats.yml). NO secrets live in this repo:
-the service-account JSON is injected at runtime via the GA4_SA env var (a GitHub Actions secret) and the
-numeric GA4 property id via GA4_PROPERTY_ID.
+Fetch aggregate Wardrive Go stats from the Google Analytics Data API (GA4) and write docs/data/stats.json for
+the static dashboard. Runs in CI (see .github/workflows/stats.yml). NO secrets live in this repo: the
+service-account JSON is injected at runtime via GA4_SA (a GitHub Actions secret) and the numeric property id via
+GA4_PROPERTY_ID.
 
-Only AGGREGATE, non-PII dimensions/metrics are queried (eventName, date, appVersion, country, deviceModel,
-OS version, activeUsers, eventCount, sessions, …). No user-level or device-id data.
-
-Each query is isolated: if one report fails (e.g. a custom dimension isn't registered yet) the rest still
-produce a valid file.
+Produces a REALTIME block (last 30 min) plus a `ranges` map — 24 hours / 7 / 28 / 90 days — each with the full
+aggregate set (active users, totals + engagement quality, events, countries, cities, devices, OS, languages,
+new-vs-returning, hour-of-day, day-of-week, top screens, and a daily timeseries). The dashboard switches between
+them client-side. Only AGGREGATE, non-PII dimensions are queried. Every report is isolated in safe() so one
+failure can't sink the file.
 """
 import json
 import os
@@ -19,17 +19,18 @@ from datetime import datetime, timezone
 from google.oauth2 import service_account
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
-    DateRange, Dimension, Metric, RunReportRequest, RunRealtimeReportRequest, OrderBy,
+    DateRange, Dimension, Metric, RunReportRequest, RunRealtimeReportRequest, OrderBy, Filter, FilterExpression,
 )
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "stats.json")
+RANGES = [(1, "24 hours"), (7, "7 days"), (28, "28 days"), (90, "90 days")]
 
 
 def client():
     raw = os.environ.get("GA4_SA", "").strip()
     if not raw:
         print("GA4_SA not set — skipping fetch (dashboard keeps its current data).")
-        sys.exit(78)  # neutral: let the workflow treat this as a no-op, not a failure
+        sys.exit(78)
     info = json.loads(raw)
     creds = service_account.Credentials.from_service_account_info(
         info, scopes=["https://www.googleapis.com/auth/analytics.readonly"])
@@ -56,11 +57,16 @@ def rows(resp):
     return resp.rows or []
 
 
+def name_filter(event_name):
+    return FilterExpression(filter=Filter(field_name="eventName",
+        string_filter=Filter.StringFilter(value=event_name)))
+
+
 def run():
     c = client()
     p = prop()
 
-    def report(dims, mets, days, limit=25, order_metric=None, order_dim=None):
+    def report(dims, mets, days, limit=25, order_metric=None, order_dim=None, dim_filter=None):
         ob = []
         if order_metric:
             ob = [OrderBy(metric=OrderBy.MetricOrderBy(metric_name=order_metric), desc=True)]
@@ -71,153 +77,145 @@ def run():
             dimensions=[Dimension(name=d) for d in dims],
             metrics=[Metric(name=m) for m in mets],
             date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")],
-            order_bys=ob, limit=limit,
+            order_bys=ob, limit=limit, dimension_filter=dim_filter,
         ))
 
-    # ---- active users over 1 / 7 / 28 days ----
-    def active(days):
-        r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name="activeUsers")],
-                                          date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")]))
-        return int(r.rows[0].metric_values[0].value) if r.rows else 0
+    def metric1(name, days):
+        r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name=name)],
+            date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")]))
+        return float(r.rows[0].metric_values[0].value) if r.rows else 0.0
 
-    active_block = safe("active", lambda: {
-        "d1": active(1), "d7": active(7), "d28": active(28)}, {"d1": 0, "d7": 0, "d28": 0})
-
-    # ---- 28-day totals ----
-    def totals():
-        r = c.run_report(RunReportRequest(property=p, metrics=[
-            Metric(name="eventCount"), Metric(name="sessions"), Metric(name="newUsers"),
-            Metric(name="userEngagementDuration")],
-            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")]))
-        v = r.rows[0].metric_values if r.rows else None
-        return {
-            "events": int(v[0].value) if v else 0,
-            "sessions": int(v[1].value) if v else 0,
-            "newUsers": int(v[2].value) if v else 0,
-            "engagementMinutes": round(float(v[3].value) / 60) if v else 0,
-        }
-    totals_block = safe("totals28d", totals, {})
-
-    # ---- event counts (the big table) ----
-    def events28d():
-        r = report(["eventName"], ["eventCount"], 28, limit=30, order_metric="eventCount")
-        return [{"name": x.dimension_values[0].value, "count": int(x.metric_values[0].value)} for x in rows(r)]
-    events_block = safe("events28d", events28d, [])
-
-    # ---- daily timeseries: activeUsers + total events + notable_spotted + capture ----
-    def timeseries():
-        r = report(["date"], ["activeUsers", "eventCount"], 28, limit=400, order_dim="date")
-        base = {x.dimension_values[0].value: {
-            "date": x.dimension_values[0].value,
-            "activeUsers": int(x.metric_values[0].value),
-            "events": int(x.metric_values[1].value), "notable": 0, "captures": 0} for x in rows(r)}
-
-        def per_event(name, key):
-            rr = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="date")],
-                metrics=[Metric(name="eventCount")],
-                date_ranges=[DateRange(start_date="28daysAgo", end_date="today")],
-                dimension_filter=_name_filter(name), limit=400))
-            for x in rows(rr):
-                d = x.dimension_values[0].value
-                if d in base:
-                    base[d][key] = int(x.metric_values[0].value)
-        safe("ts notable", lambda: per_event("notable_spotted", "notable"), None)
-        safe("ts captures", lambda: per_event("capture", "captures"), None)
-        out = sorted(base.values(), key=lambda z: z["date"])
-        for z in out:  # YYYYMMDD -> YYYY-MM-DD
-            if len(z["date"]) == 8:
-                z["date"] = f'{z["date"][:4]}-{z["date"][4:6]}-{z["date"][6:]}'
-        return out
-    ts_block = safe("timeseries", timeseries, [])
-
-    def top(dim, key, limit=6):
-        r = report([dim], ["activeUsers"], 28, limit=limit, order_metric="activeUsers")
-        return [{key: x.dimension_values[0].value, "users": int(x.metric_values[0].value)} for x in rows(r)]
-
-    versions = safe("versions", lambda: top("appVersion", "version"), [])
-    devices = safe("devices", lambda: top("deviceModel", "model"), [])
-    android = safe("android", lambda: top("operatingSystemWithVersion", "os"), [])
-
-    # Countries WITH ISO code (countryId) so the globe can place them on centroids.
-    def countries_fn():
-        r = c.run_report(RunReportRequest(property=p,
-            dimensions=[Dimension(name="country"), Dimension(name="countryId")],
-            metrics=[Metric(name="activeUsers")],
-            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")],
-            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="activeUsers"), desc=True)], limit=30))
-        return [{"country": x.dimension_values[0].value, "code": x.dimension_values[1].value,
-                 "users": int(x.metric_values[0].value)} for x in rows(r)]
-    countries = safe("countries", countries_fn, [])
-
-    # Hour-of-day (00-23, property timezone) — the "busiest hour" rhythm.
-    def hours_fn():
-        r = report(["hour"], ["activeUsers"], 28, limit=48, order_dim="hour")
-        m = {int(x.dimension_values[0].value): int(x.metric_values[0].value) for x in rows(r)}
-        return [{"h": h, "users": m.get(h, 0)} for h in range(24)]
-    hours = safe("hours", hours_fn, [])
-
-    # Day-of-week (0=Sun … 6=Sat) ordered Mon-first for the chart.
-    def weekdays_fn():
-        r = report(["dayOfWeek"], ["activeUsers"], 28, limit=10)
-        m = {int(x.dimension_values[0].value): int(x.metric_values[0].value) for x in rows(r)}
-        names = {0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat"}
-        order = [1, 2, 3, 4, 5, 6, 0]
-        return [{"d": names[i], "users": m.get(i, 0)} for i in order]
-    weekdays = safe("weekdays", weekdays_fn, [])
-
-    # Top screens by views.
-    def screens_fn():
-        r = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="unifiedScreenName")],
-            metrics=[Metric(name="screenPageViews")],
-            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")],
-            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)], limit=10))
-        return [{"name": x.dimension_values[0].value, "views": int(x.metric_values[0].value)} for x in rows(r)
-                if x.dimension_values[0].value not in ("(not set)", "")]
-    screens = safe("screens", screens_fn, [])
-
-    # New vs returning users.
-    def new_returning():
-        r = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="newVsReturning")],
-            metrics=[Metric(name="activeUsers")],
-            date_ranges=[DateRange(start_date="28daysAgo", end_date="today")], limit=5))
-        out = {"new": 0, "returning": 0}
+    def lst(dim, key, days, limit=8, metric="activeUsers", vk="users"):
+        r = report([dim], [metric], days, limit=limit, order_metric=metric)
+        out = []
         for x in rows(r):
-            k = x.dimension_values[0].value.lower()
-            if k.startswith("new"):
-                out["new"] = int(x.metric_values[0].value)
-            elif k.startswith("return"):
-                out["returning"] = int(x.metric_values[0].value)
+            v = x.dimension_values[0].value
+            if v in ("(not set)", ""):
+                v = "Unknown"
+            out.append({key: v, vk: int(float(x.metric_values[0].value))})
         return out
-    nr = safe("newReturning", new_returning, {"new": 0, "returning": 0})
+
+    def range_block(days, label):
+        def totals():
+            r = c.run_report(RunReportRequest(property=p, metrics=[
+                Metric(name="activeUsers"), Metric(name="eventCount"), Metric(name="sessions"),
+                Metric(name="newUsers"), Metric(name="userEngagementDuration"), Metric(name="engagementRate")],
+                date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")]))
+            v = r.rows[0].metric_values if r.rows else None
+            au = int(float(v[0].value)) if v else 0
+            ev = int(float(v[1].value)) if v else 0
+            se = int(float(v[2].value)) if v else 0
+            nu = int(float(v[3].value)) if v else 0
+            eng = float(v[4].value) if v else 0.0
+            er = float(v[5].value) if v else 0.0
+            return {"active": au, "events": ev, "sessions": se, "newUsers": nu,
+                    "engagementMinutes": round(eng / 60), "avgEngagementSec": round(eng / au) if au else 0,
+                    "eventsPerSession": round(ev / se, 1) if se else 0, "engagementRate": round(er * 100)}
+
+        def events():
+            r = report(["eventName"], ["eventCount"], days, limit=30, order_metric="eventCount")
+            return [{"name": x.dimension_values[0].value, "count": int(float(x.metric_values[0].value))} for x in rows(r)]
+
+        def countries():
+            r = report(["country", "countryId"], ["activeUsers"], days, limit=40, order_metric="activeUsers")
+            out = []
+            for x in rows(r):
+                nm = x.dimension_values[0].value
+                out.append({"country": "Unknown" if nm in ("(not set)", "") else nm,
+                            "code": x.dimension_values[1].value, "users": int(float(x.metric_values[0].value))})
+            return out
+
+        def new_returning():
+            r = report(["newVsReturning"], ["activeUsers"], days, limit=5)
+            o = {"new": 0, "returning": 0}
+            for x in rows(r):
+                k = x.dimension_values[0].value.lower()
+                if k.startswith("new"): o["new"] = int(float(x.metric_values[0].value))
+                elif k.startswith("return"): o["returning"] = int(float(x.metric_values[0].value))
+            return o
+
+        def hours():
+            r = report(["hour"], ["activeUsers"], days, limit=48)
+            m = {int(x.dimension_values[0].value): int(float(x.metric_values[0].value)) for x in rows(r)}
+            return [{"h": h, "users": m.get(h, 0)} for h in range(24)]
+
+        def weekdays():
+            r = report(["dayOfWeek"], ["activeUsers"], days, limit=10)
+            m = {int(x.dimension_values[0].value): int(float(x.metric_values[0].value)) for x in rows(r)}
+            names = {0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat"}
+            return [{"d": names[i], "users": m.get(i, 0)} for i in [1, 2, 3, 4, 5, 6, 0]]
+
+        def timeseries():
+            if days < 7:
+                return []
+            r = report(["date"], ["activeUsers", "eventCount"], days, limit=400, order_dim="date")
+            base = {x.dimension_values[0].value: {
+                "date": x.dimension_values[0].value, "activeUsers": int(float(x.metric_values[0].value)),
+                "events": int(float(x.metric_values[1].value)), "notable": 0, "captures": 0} for x in rows(r)}
+
+            def overlay(ev, key):
+                rr = report(["date"], ["eventCount"], days, limit=400, dim_filter=name_filter(ev))
+                for x in rows(rr):
+                    d = x.dimension_values[0].value
+                    if d in base: base[d][key] = int(float(x.metric_values[0].value))
+            safe("ts notable", lambda: overlay("notable_spotted", "notable"), None)
+            safe("ts captures", lambda: overlay("capture", "captures"), None)
+            out = sorted(base.values(), key=lambda z: z["date"])
+            for z in out:
+                if len(z["date"]) == 8:
+                    z["date"] = f'{z["date"][:4]}-{z["date"][4:6]}-{z["date"][6:]}'
+            return out
+
+        return {
+            "label": label,
+            "totals": safe(f"{label} totals", totals, {}),
+            "newReturning": safe(f"{label} nr", new_returning, {"new": 0, "returning": 0}),
+            "events": safe(f"{label} events", events, []),
+            "countries": safe(f"{label} countries", countries, []),
+            "cities": safe(f"{label} cities", lambda: lst("city", "city", days, 8), []),
+            "versions": safe(f"{label} versions", lambda: lst("appVersion", "version", days, 6), []),
+            "devices": safe(f"{label} devices", lambda: lst("deviceModel", "model", days, 6), []),
+            "android": safe(f"{label} android", lambda: lst("operatingSystemWithVersion", "os", days, 6), []),
+            "languages": safe(f"{label} languages", lambda: lst("language", "language", days, 6), []),
+            "hours": safe(f"{label} hours", hours, []),
+            "weekdays": safe(f"{label} weekdays", weekdays, []),
+            "screens": safe(f"{label} screens", lambda: lst("unifiedScreenName", "name", days, 8, "screenPageViews", "views"), []),
+            "timeseries": safe(f"{label} ts", timeseries, []),
+        }
 
     # ---- realtime (last 30 min) ----
     def realtime():
         ru = c.run_realtime_report(RunRealtimeReportRequest(property=p, metrics=[Metric(name="activeUsers")]))
-        users = int(ru.rows[0].metric_values[0].value) if ru.rows else 0
+        users = int(float(ru.rows[0].metric_values[0].value)) if ru.rows else 0
         re = c.run_realtime_report(RunRealtimeReportRequest(property=p,
             dimensions=[Dimension(name="eventName")], metrics=[Metric(name="eventCount")],
-            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="eventCount"), desc=True)], limit=12))
-        evs = [{"name": x.dimension_values[0].value, "count": int(x.metric_values[0].value)} for x in rows(re)]
-        return {"activeUsers": users, "events": evs}
-    rt_block = safe("realtime", realtime, {"activeUsers": 0, "events": []})
+            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="eventCount"), desc=True)], limit=14))
+        evs = [{"name": x.dimension_values[0].value, "count": int(float(x.metric_values[0].value))} for x in rows(re)]
+
+        def rt_countries():
+            rc = c.run_realtime_report(RunRealtimeReportRequest(property=p,
+                dimensions=[Dimension(name="country"), Dimension(name="countryId")], metrics=[Metric(name="activeUsers")],
+                order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="activeUsers"), desc=True)], limit=40))
+            out = []
+            for x in rows(rc):
+                nm = x.dimension_values[0].value
+                out.append({"country": "Unknown" if nm in ("(not set)", "") else nm,
+                            "code": x.dimension_values[1].value, "users": int(float(x.metric_values[0].value))})
+            return out
+        return {"activeUsers": users, "events": evs, "countries": safe("rt countries", rt_countries, [])}
 
     out = {
         "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "realtime": rt_block, "active": active_block, "totals28d": totals_block, "newReturning": nr,
-        "events28d": events_block, "timeseries": ts_block, "hours": hours, "weekdays": weekdays,
-        "screens": screens, "versions": versions, "countries": countries, "devices": devices, "android": android,
+        "realtime": safe("realtime", realtime, {"activeUsers": 0, "events": [], "countries": []}),
+        "ranges": {f"{d}d": range_block(d, label) for d, label in RANGES},
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
-    print(f"wrote {OUT}: {len(events_block)} event types, {len(ts_block)} days, "
-          f"realtime users={rt_block.get('activeUsers')}")
-
-
-def _name_filter(event_name):
-    from google.analytics.data_v1beta.types import Filter, FilterExpression
-    return FilterExpression(filter=Filter(field_name="eventName",
-        string_filter=Filter.StringFilter(value=event_name)))
+    r28 = out["ranges"].get("28d", {})
+    print(f"wrote {OUT}: realtime={out['realtime'].get('activeUsers')} users, "
+          f"28d active={r28.get('totals', {}).get('active')}, {len(r28.get('events', []))} event types, "
+          f"ranges={list(out['ranges'].keys())}")
 
 
 if __name__ == "__main__":

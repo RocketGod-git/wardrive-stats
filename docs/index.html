@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header>
@@ -22,7 +22,7 @@
 </header>
 
 <div id="content" style="display:none">
-  <!-- Realtime -->
+  <!-- Realtime (last 30 min) — always on -->
   <section>
     <div class="realtime">
       <h2 style="color:var(--accent)">⚡ Realtime · last 30 min</h2>
@@ -31,10 +31,20 @@
     </div>
   </section>
 
+  <!-- Range selector -->
+  <section>
+    <div class="rangebar">
+      <span class="rangebar-lbl">Window:</span>
+      <span id="rangeSel" class="rangebar-chips"></span>
+      <span class="spacer"></span>
+      <span class="rangebar-cur" id="rangeTitle">28 days</span>
+    </div>
+  </section>
+
   <!-- Globe -->
   <section>
     <div class="panel globe-panel">
-      <h2>🌍 Wardrivers worldwide · active users · last 28 days</h2>
+      <h2>🌍 Wardrivers worldwide · active users</h2>
       <div id="globe"></div>
       <div id="globeLegend" class="globe-legend"></div>
     </div>
@@ -43,10 +53,10 @@
   <!-- Headline cards -->
   <section class="grid cards" id="cards"></section>
 
-  <!-- Charts -->
+  <!-- Trend + events -->
   <section class="two">
-    <div class="panel"><h2>Activity · last 28 days</h2><div class="chartbox"><canvas id="tsChart"></canvas></div></div>
-    <div class="panel"><h2>Events · last 28 days</h2><div class="chartbox"><canvas id="evChart"></canvas></div></div>
+    <div class="panel" id="tsPanel"><h2>Activity trend</h2><div class="chartbox"><canvas id="tsChart"></canvas></div></div>
+    <div class="panel"><h2>Events</h2><div class="chartbox"><canvas id="evChart"></canvas></div></div>
   </section>
 
   <!-- Rhythm -->
@@ -58,13 +68,19 @@
   <!-- Screens + audience -->
   <section class="two">
     <div class="panel"><h2>Top screens</h2><div class="list" id="screens"></div></div>
-    <div class="panel"><h2>Audience · 28 days</h2><div class="chartbox"><canvas id="nrChart"></canvas></div></div>
+    <div class="panel"><h2>New vs returning</h2><div class="chartbox"><canvas id="nrChart"></canvas></div></div>
   </section>
 
-  <!-- Breakdowns -->
+  <!-- Geography -->
+  <section class="two">
+    <div class="panel"><h2>Countries</h2><div class="list" id="countries"></div></div>
+    <div class="panel"><h2>Cities</h2><div class="list" id="cities"></div></div>
+  </section>
+
+  <!-- Fleet -->
   <section class="two">
     <div class="panel"><h2>App versions</h2><div class="list" id="versions"></div></div>
-    <div class="panel"><h2>Countries</h2><div class="list" id="countries"></div></div>
+    <div class="panel"><h2>Languages</h2><div class="list" id="languages"></div></div>
   </section>
   <section class="two">
     <div class="panel"><h2>Top devices</h2><div class="list" id="devices"></div></div>
@@ -81,6 +97,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

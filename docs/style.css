@@ -40,6 +40,14 @@ h2{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mute
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:760px){.two{grid-template-columns:1fr}}
 canvas{max-width:100%}
+.rangebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rangebar-lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.rangebar-chips{display:flex;gap:6px;flex-wrap:wrap}
+.rchip{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:.15s}
+.rchip:hover{color:var(--ink);border-color:var(--accent)}
+.rchip.on{color:#07100e;background:var(--accent);border-color:var(--accent)}
+.rangebar-cur{color:var(--accent);font-size:12px;font-weight:700}
 .globe-panel{overflow:hidden}
 #globe{height:440px;display:flex;align-items:center;justify-content:center;cursor:grab}
 #globe canvas{display:block}
