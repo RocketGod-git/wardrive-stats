@@ -180,22 +180,28 @@ function drawGlobe(countries) {
   const el = $('globe');
   const byIso = {}; countries.forEach(c => { if (c.code) byIso[c.code.toUpperCase()] = c.users; });
   const max = Math.max(...countries.map(c => c.users), 1);
-  const labels = countries.map(c => { const ll = CENTROIDS[(c.code || '').toUpperCase()]; return ll ? { country: c.country, users: c.users, lat: ll[0], lng: ll[1] } : null; }).filter(Boolean);
+  // Only label the TOP countries that have a centroid — stops the clustered-numbers pile-up in dense regions
+  // (Europe). The rest still show via the choropleth fill + hover tooltip + the legend below.
+  const labels = countries.filter(c => CENTROIDS[(c.code || '').toUpperCase()])
+    .slice().sort((a, b) => b.users - a.users).slice(0, 10)
+    .map(c => { const ll = CENTROIDS[c.code.toUpperCase()]; return { country: c.country, users: c.users, lat: ll[0], lng: ll[1] }; });
   $('globeLegend').innerHTML = countries.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(c =>
     `<span class="chip"><span class="d" style="background:${colorScale(c.users / max)}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
   if (typeof Globe !== 'function') return;
-  const w = el.clientWidth || 600, h = el.clientHeight || 440;
   if (!GLOBE) {
     GLOBE = Globe()(el).backgroundColor('rgba(0,0,0,0)')
       .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-dark.jpg')
       .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18);
     GLOBE.controls().autoRotate = true; GLOBE.controls().autoRotateSpeed = 0.5; GLOBE.controls().enableZoom = true;
+    GLOBE.width(el.clientWidth || 600).height(el.clientHeight || 440);
+    GLOBE.pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);   // set ONCE — never on refresh, so the user's rotation/zoom is kept
     window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
   }
-  GLOBE.width(w).height(h).pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);
+  // DATA ONLY on refresh (no width/pointOfView) → the globe doesn't snap back. Numbers are clean white (not the
+  // magnitude palette) so they read against the blue; size still scales a little with magnitude.
   GLOBE.labelsData(labels).labelLat(d => d.lat).labelLng(d => d.lng).labelText(d => fmt(d.users))
-    .labelColor(d => colorScale(d.users / max)).labelSize(d => 2.8 + Math.sqrt(d.users / max) * 1.6)
-    .labelDotRadius(d => 0.5 + Math.sqrt(d.users / max) * 0.4).labelResolution(2).labelAltitude(0.013)
+    .labelColor(() => '#eef6f3').labelSize(d => 2.5 + Math.sqrt(d.users / max) * 1.3)
+    .labelDotRadius(0.42).labelResolution(2).labelAltitude(0.013)
     .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
   const applyPolys = (features) => GLOBE.polygonsData(features)
     .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(u / max), 0.55) : 'rgba(28,44,49,0.28)'; })
