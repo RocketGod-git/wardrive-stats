@@ -163,8 +163,8 @@ function drawGlobe(countries) {
     .labelLat(d => d.lat).labelLng(d => d.lng)
     .labelText(d => fmt(d.users))
     .labelColor(d => colorScale(d.users / max))
-    .labelSize(d => 1.1 + (d.users / max) * 2.4)
-    .labelDotRadius(d => 0.3 + (d.users / max) * 0.6)
+    .labelSize(d => 1.7 + Math.sqrt(d.users / max) * 2.0)   // sqrt + floor so small counts stay readable
+    .labelDotRadius(d => 0.45 + Math.sqrt(d.users / max) * 0.5)
     .labelResolution(2).labelAltitude(0.013)
     .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
 
