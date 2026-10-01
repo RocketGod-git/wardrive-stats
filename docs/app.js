@@ -5,6 +5,7 @@
 const ACCENT = '#19e0b4', ACCENT2 = '#16c0ff', MUTED = '#7d97a0', GRID = '#1f2e33';
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('en-US'));
+const fmtDur = (s) => (!s ? '—' : s >= 3600 ? `${Math.floor(s/3600)}h ${Math.round(s%3600/60)}m` : s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`);
 const show = (id) => { const e = $(id); if (e) e.style.display = ''; };
 const hide = (id) => { const e = $(id); if (e) e.style.display = 'none'; };
 
@@ -117,7 +118,7 @@ function renderRange() {
     card('Events', fmt(t.events), ''),
     card('Sessions', fmt(t.sessions), ''),
     card('New users', fmt(t.newUsers), ''),
-    card('Avg engagement', t.avgEngagementSec ? t.avgEngagementSec + 's' : '—', 'per user'),
+    card('Avg engagement', fmtDur(t.avgEngagementSec), 'per user'),
     card('Events / session', t.eventsPerSession != null ? t.eventsPerSession : '—', ''),
     card('Engaged', t.engagementRate != null ? t.engagementRate + '%' : '—', 'sessions'),
     card('Engagement', fmt(t.engagementMinutes), 'minutes')

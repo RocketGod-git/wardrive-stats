@@ -4,11 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wardrive Go · Live Stats</title>
-<meta name="description" content="Aggregate, anonymous usage stats for the Wardrive Go app.">
+<meta name="description" content="Live global stats for the Wardrive Go wardriving app — a glowing worldwide globe, realtime activity, and 90 days of usage. Aggregate & anonymous.">
+<meta name="theme-color" content="#19e0b4">
+<link rel="canonical" href="https://rocketgod-git.github.io/wardrive-stats/">
+<!-- Rich link previews (Discord, Twitter/X, Slack, iMessage, …) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Wardrive Go">
+<meta property="og:title" content="Wardrive Go · Live Stats">
+<meta property="og:description" content="A glowing worldwide globe of wardrivers — realtime activity, handshakes, notable devices, and 90 days of usage. Aggregate & anonymous.">
+<meta property="og:url" content="https://rocketgod-git.github.io/wardrive-stats/">
+<meta property="og:image" content="https://rocketgod-git.github.io/wardrive-stats/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Wardrive Go live-stats globe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Wardrive Go · Live Stats">
+<meta name="twitter:description" content="A glowing worldwide globe of wardrivers — realtime activity, handshakes, notable devices, and 90 days of usage.">
+<meta name="twitter:image" content="https://rocketgod-git.github.io/wardrive-stats/og.png?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <header>
@@ -17,6 +33,9 @@
     <div class="tagline">aggregate · anonymous · auto-refreshed</div>
   </div>
   <div class="spacer"></div>
+  <a class="play-btn" href="https://play.google.com/store/apps/details?id=com.rocketgod.wardrive" target="_blank" rel="noopener">
+    <span class="play-tri">▶</span><span class="play-txt"><b>Get Wardrive Go</b><br>on Google Play</span>
+  </a>
   <div id="sampleBadge" class="sample-badge" style="display:none">SAMPLE DATA</div>
   <div class="stamp"><span class="dot"></span><span id="stamp">loading…</span></div>
 </header>
@@ -97,6 +116,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
