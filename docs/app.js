@@ -34,10 +34,17 @@ const CENTROIDS = {
   NG:[9.1,8.7],KE:[-0.02,37.9]
 };
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+// Activity is wildly skewed — one huge country (US) and a long tail — so LINEAR u/max pins almost every country to
+// the bottom of the ramp (they all come out the same colour). A LOG map spreads that tail across the whole ramp so
+// the variation is actually visible. Returns 0..1.
+const heatFrac = (u, max) => max > 1 ? Math.log1p(Math.max(0, u)) / Math.log1p(max) : 0;
+// "Inferno"-style ramp (deep indigo → violet → magenta → orange → amber) — the SDR-waterfall look. Perceptually it
+// rises in brightness as well as hue, so bigger = hotter reads instantly, and it never looks like ocean.
+const HEAT = [[40,16,84], [96,24,148], [182,38,120], [236,88,54], [250,204,78]];
 const colorScale = (frac) => {
-  // LAND heat ramp — deliberately WARM (violet → magenta → amber-gold) so filled countries never read as ocean
-  // against the dark-water globe. Blue was the old low end and looked like sea; violet/magenta/gold cannot.
-  const a = frac < 0.5 ? mix([124,86,230],[236,72,153], frac/0.5) : mix([236,72,153],[255,196,64],(frac-0.5)/0.5);
+  const f = Math.max(0, Math.min(1, frac)) * (HEAT.length - 1);
+  const i = Math.min(HEAT.length - 2, Math.floor(f));
+  const a = mix(HEAT[i], HEAT[i + 1], f - i);
   return `rgb(${a[0]},${a[1]},${a[2]})`;
 };
 const rgba = (rgb, a) => rgb.replace('rgb(', 'rgba(').replace(')', `,${a})`);
@@ -232,7 +239,7 @@ function drawGlobe(countries) {
   ALL_LABELS = countries.filter(c => CENTROIDS[(c.code || '').toUpperCase()]).slice().sort((a, b) => b.users - a.users)
     .map(c => { const ll = CENTROIDS[c.code.toUpperCase()]; return { country: c.country, users: c.users, lat: ll[0], lng: ll[1] }; });
   $('globeLegend').innerHTML = countries.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(c =>
-    `<span class="chip"><span class="d" style="background:${colorScale(c.users / max)}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
+    `<span class="chip"><span class="d" style="background:${colorScale(heatFrac(c.users, max))}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
   if (typeof Globe !== 'function') return;
   if (!GLOBE) {
     GLOBE = Globe()(el).backgroundColor('rgba(0,0,0,0)')
@@ -262,7 +269,7 @@ function drawGlobe(countries) {
   while (NUM_POOL.length < want) { const n = document.createElement('div'); n.style.display = 'none'; GLOBE_NUM_OV.appendChild(n); NUM_POOL.push(n); }
   GLOBE.labelsData(ALL_LABELS);   // a dot on every labelable country; numbers come from the overlay
   const applyPolys = (features) => GLOBE.polygonsData(features)
-    .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(u / max), 0.55) : 'rgba(28,44,49,0.28)'; })
+    .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(heatFrac(u, max)), 0.62) : 'rgba(28,44,49,0.28)'; })
     .polygonSideColor(() => 'rgba(0,0,0,0)').polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
     .polygonAltitude(f => byIso[isoOf(f)] ? 0.014 : 0.006).polygonsTransitionDuration(300)
     .polygonLabel(f => { const u = byIso[isoOf(f)]; return u ? `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${f.properties.ADMIN}</b><br>${fmt(u)} active users</div>` : '' });
