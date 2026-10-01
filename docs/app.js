@@ -126,18 +126,23 @@ function render(d) {
   list($('android'), d.android, 'os', 'users');
 }
 
-let GLOBE;
+const rgba = (rgb, a) => rgb.replace('rgb(', 'rgba(').replace(')', `,${a})`);
+const isoOf = (f) => (f.properties.ISO_A2 || f.properties.ISO_A2_EH || '').toUpperCase();
+let GLOBE, GEO;
 function drawGlobe(countries) {
   const el = $('globe');
-  const pts = countries.map(c => {
+  const byIso = {};
+  countries.forEach(c => { if (c.code) byIso[c.code.toUpperCase()] = c.users; });
+  const max = Math.max(...countries.map(c => c.users), 1);
+  // Floating live NUMBERS, one per country with a known centroid.
+  const labels = countries.map(c => {
     const ll = CENTROIDS[(c.code || '').toUpperCase()];
-    return ll ? { country: c.country, users: c.users, lat: ll[0], lng: ll[1] } : null;
+    return ll ? { country: c.country, code: c.code, users: c.users, lat: ll[0], lng: ll[1] } : null;
   }).filter(Boolean);
-  const max = Math.max(...pts.map(p => p.users), 1);
 
-  // Legend: top 5 located countries.
-  $('globeLegend').innerHTML = pts.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(p =>
-    `<span class="chip"><span class="d" style="background:${colorScale(p.users / max)}"></span>${p.country} <b>${fmt(p.users)}</b></span>`).join('');
+  // Legend: top 5.
+  $('globeLegend').innerHTML = countries.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(c =>
+    `<span class="chip"><span class="d" style="background:${colorScale(c.users / max)}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
 
   if (typeof Globe !== 'function') return;  // lib blocked/offline — legend + Countries list still cover it
   const w = el.clientWidth || 600, h = el.clientHeight || 440;
@@ -145,19 +150,34 @@ function drawGlobe(countries) {
     GLOBE = Globe()(el)
       .backgroundColor('rgba(0,0,0,0)')
       .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-dark.jpg')
-      .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18)
-      .pointLat('lat').pointLng('lng').pointResolution(2)
-      .pointColor(p => colorScale(p.users / max))
-      .pointAltitude(p => 0.02 + (p.users / max) * 0.20)
-      .pointRadius(p => 0.6 + (p.users / max) * 0.7)
-      .pointLabel(p => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2">
-        <b style="color:#19e0b4">${p.country}</b><br>${fmt(p.users)} active users</div>`);
+      .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18);
     GLOBE.controls().autoRotate = true;
-    GLOBE.controls().autoRotateSpeed = 0.55;
+    GLOBE.controls().autoRotateSpeed = 0.5;
     GLOBE.controls().enableZoom = true;
     window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
   }
-  GLOBE.width(w).height(h).pointsData(pts).pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);
+  GLOBE.width(w).height(h).pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);
+
+  // Floating NUMBERS (dynamic, per country).
+  GLOBE.labelsData(labels)
+    .labelLat(d => d.lat).labelLng(d => d.lng)
+    .labelText(d => fmt(d.users))
+    .labelColor(d => colorScale(d.users / max))
+    .labelSize(d => 1.1 + (d.users / max) * 2.4)
+    .labelDotRadius(d => 0.3 + (d.users / max) * 0.6)
+    .labelResolution(2).labelAltitude(0.013)
+    .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
+
+  // Country BORDERS + choropleth fill (active countries glow in their magnitude colour; the rest are faint).
+  const applyPolys = (features) => GLOBE.polygonsData(features)
+    .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(u / max), 0.55) : 'rgba(28,44,49,0.28)'; })
+    .polygonSideColor(() => 'rgba(0,0,0,0)')
+    .polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
+    .polygonAltitude(f => byIso[isoOf(f)] ? 0.014 : 0.006)
+    .polygonsTransitionDuration(300)
+    .polygonLabel(f => { const u = byIso[isoOf(f)]; return u ? `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${f.properties.ADMIN}</b><br>${fmt(u)} active users</div>` : '' });
+  if (GEO) applyPolys(GEO);
+  else fetch('data/countries-110m.geojson').then(r => r.json()).then(j => { GEO = j.features; applyPolys(GEO); }).catch(() => {});
 }
 
 function drawHours(hours) {
