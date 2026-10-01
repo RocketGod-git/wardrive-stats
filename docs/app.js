@@ -11,7 +11,7 @@ const hide = (id) => { const e = $(id); if (e) e.style.display = 'none'; };
 
 const LABELS = {
   notable_spotted: 'Notable devices found', notable_aircraft: 'Notable aircraft', drone_detected: 'Drones detected',
-  capture: 'Handshakes / PMKIDs captured', capture_cracked: 'Passwords cracked', upload: 'Uploads',
+  capture: 'Handshakes', capture_cracked: 'Passwords cracked', upload: 'Uploads',
   adapter_engaged: 'Wi-Fi adapters engaged', sdr_connected: 'SDR sessions', cluster_linked: 'Mesh cluster links',
   language_set: 'Language changed', export: 'Data exports', tool_opened: 'Tools opened', secret_unlock: 'Secret unlocks',
   app_version_active: 'Active app versions', session_start: 'Sessions started', screen_view: 'Screens viewed',
@@ -141,7 +141,10 @@ const CHARTS = {};
 const mkChart = (id, cfg) => { const c = $(id); if (!c) return; CHARTS[id]?.destroy(); CHARTS[id] = new Chart(c, cfg); };
 const baseAxis = (extra) => Object.assign({ grid: { color: GRID }, ticks: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 } } }, extra || {});
 
-function drawTimeseries(ts) {
+function drawTimeseries(tsIn) {
+  // Drop the final bucket: it's the CURRENT (still-accumulating) day/hour in the snapshot, so it always reads low
+  // and drew a misleading cliff at the right edge. Charting only completed buckets ends the line on real data.
+  const ts = (tsIn && tsIn.length > 2) ? tsIn.slice(0, -1) : (tsIn || []);
   mkChart('tsChart', { type: 'line',
     data: { labels: ts.map(p => p.date.slice(5)), datasets: [
       { label: 'active users', data: ts.map(p => p.activeUsers), borderColor: ACCENT, backgroundColor: 'rgba(25,224,180,.12)', fill: true, tension: .35, pointRadius: 0, borderWidth: 2, yAxisID: 'y' },
@@ -175,23 +178,48 @@ function drawNewReturning(nr) {
 }
 
 // ---- globe: country borders + choropleth + floating live numbers ----
-let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LAST_LABEL_N = -1, LZ = null, LALT = 2.3;
-const DEFAULT_ALT = 2.3;
-// How many country numbers to show at a given camera altitude: zoomed out → few (no clutter); zoomed in → more.
-function labelsForAlt(alt) { return Math.max(6, Math.min(ALL_LABELS.length, Math.round(8 + Math.max(0, 2.3 - alt) * 30))); }
-// Label size is in GLOBE-DEGREES, so a fixed size balloons as you zoom in. Scale it ~proportional to altitude so
-// the ON-SCREEN size stays roughly constant → numbers shrink when zoomed in, letting more fit without overlap.
-function labelSizeFn(d) {
-  const base = 2.5 + Math.sqrt(d.users / (LABEL_MAX || 1)) * 1.3;
-  const z = Math.max(0.3, Math.min(1.15, LALT / DEFAULT_ALT));
-  return base * z;
+let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LALT = 2.3, NUM_POOL = [], NUM_RAF = null, GLOBE_NUM_OV = null;
+// Dot size (globe-degrees) by magnitude — small + constant across zoom. Dots are real 3D objects, so the globe
+// mesh occludes the far-side ones for free.
+function dotRadiusFn(d) { return 0.26 + Math.sqrt(d.users / (LABEL_MAX || 1)) * 0.5; }
+// Great-circle cosine between the sub-camera point and a label. > ~0 ⇒ the label is on the NEAR hemisphere (so it
+// isn't hidden behind the globe). Lets us cull back-side numbers without touching three.js internals.
+function frontCos(lat1, lng1, lat2, lng2) {
+  const r = Math.PI / 180, a = lat1 * r, b = lat2 * r, dl = (lng2 - lng1) * r;
+  return Math.sin(a) * Math.sin(b) + Math.cos(a) * Math.cos(b) * Math.cos(dl);
 }
-function syncLabels() {
-  if (!GLOBE) return;
-  LALT = GLOBE.pointOfView().altitude;
-  GLOBE.labelSize(labelSizeFn);                       // rescale for the current zoom (keeps on-screen size steady)
-  const n = labelsForAlt(LALT);
-  if (n !== LAST_LABEL_N) { LAST_LABEL_N = n; GLOBE.labelsData(ALL_LABELS.slice(0, n)); }
+// On-screen number font (px) by magnitude — bounded so the greedy collision test stays predictable.
+function numFont(users) { return Math.round(12 + Math.sqrt(users / (LABEL_MAX || 1)) * 12); }   // 12..24px
+// THE FIX for overlapping numbers: our own absolutely-positioned HTML numbers over the globe canvas, re-laid-out
+// in SCREEN space every frame. globe.gl's getScreenCoords projects each country centroid; we drop the ones behind
+// the globe (frontCos) then greedily keep the biggest first, SKIPPING any whose box would overlap one already
+// placed. So numbers never collide at any zoom — and zooming IN spreads countries apart on screen, which lets MORE
+// numbers through automatically. Runs on rAF so it tracks the auto-rotation smoothly (no labelsData churn/flicker).
+function layoutNums() {
+  NUM_RAF = requestAnimationFrame(layoutNums);
+  if (!GLOBE || typeof GLOBE.getScreenCoords !== 'function' || !GLOBE_NUM_OV) return;
+  const el = $('globe'); if (!el) return;
+  const W = el.clientWidth, H = el.clientHeight;
+  const pov = GLOBE.pointOfView(); LALT = pov.altitude;
+  const placed = []; let used = 0;
+  for (const d of ALL_LABELS) {                              // already sorted by users DESC
+    if (used >= NUM_POOL.length) break;
+    if (frontCos(pov.lat, pov.lng, d.lat, d.lng) < 0.12) continue;      // behind the globe / past the limb
+    const sc = GLOBE.getScreenCoords(d.lat, d.lng, 0.02);
+    if (!sc || sc.x < 8 || sc.y < 8 || sc.x > W - 8 || sc.y > H - 8) continue;
+    const txt = fmt(d.users), f = numFont(d.users);
+    const hw = f * 0.60 * txt.length / 2 + 5, hh = f / 2 + 4;           // half-box + a little padding
+    let hit = false;
+    for (const p of placed) { if (Math.abs(sc.x - p.x) < hw + p.hw && Math.abs(sc.y - p.y) < hh + p.hh) { hit = true; break; } }
+    if (hit) continue;
+    placed.push({ x: sc.x, y: sc.y, hw, hh });
+    const n = NUM_POOL[used++];
+    if (n.textContent !== txt) n.textContent = txt;
+    n.style.cssText = 'position:absolute;left:' + sc.x + 'px;top:' + sc.y + 'px;transform:translate(-50%,-50%);' +
+      "font:700 " + f + "px 'JetBrains Mono',monospace;color:#eef6f3;white-space:nowrap;pointer-events:none;" +
+      'text-shadow:0 1px 3px #000,0 0 7px rgba(0,0,0,.85);';
+  }
+  for (let i = used; i < NUM_POOL.length; i++) if (NUM_POOL[i].style.display !== 'none') NUM_POOL[i].style.display = 'none';
 }
 function drawGlobe(countries) {
   const el = $('globe');
@@ -211,15 +239,26 @@ function drawGlobe(countries) {
     GLOBE.controls().autoRotate = true; GLOBE.controls().autoRotateSpeed = 0.5; GLOBE.controls().enableZoom = true;
     GLOBE.width(el.clientWidth || 600).height(el.clientHeight || 440);
     GLOBE.pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);   // set ONCE — never on refresh, so the user's rotation/zoom is kept
-    // Label accessors set once; clean white numbers (not the magnitude palette) so they read against the blue.
-    GLOBE.labelLat(d => d.lat).labelLng(d => d.lng).labelText(d => fmt(d.users)).labelColor(() => '#eef6f3')
-      .labelSize(labelSizeFn).labelDotRadius(0.42).labelResolution(2).labelAltitude(0.013)
+    // DOTS ONLY — the numbers are drawn by the HTML overlay (layoutNums) so they can be decluttered in screen space.
+    // The dots are real 3D objects pinned to the surface, so the globe mesh occludes the far-side ones automatically.
+    GLOBE.labelLat(d => d.lat).labelLng(d => d.lng).labelText(() => '')
+      .labelColor(() => 'rgba(120,224,255,0.92)').labelDotRadius(dotRadiusFn).labelResolution(2).labelAltitude(0.015)
       .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
-    // Reveal more / fewer numbers as the user zooms (throttled; altitude-driven).
-    GLOBE.controls().addEventListener('change', () => { clearTimeout(LZ); LZ = setTimeout(syncLabels, 120); });
     window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
+    // Build the number overlay once, then start the per-frame declutter loop.
+    el.style.position = 'relative';
+    GLOBE_NUM_OV = document.getElementById('globeNums');
+    if (!GLOBE_NUM_OV) {
+      GLOBE_NUM_OV = document.createElement('div'); GLOBE_NUM_OV.id = 'globeNums';
+      GLOBE_NUM_OV.style.cssText = 'position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2';
+      el.appendChild(GLOBE_NUM_OV);
+    }
+    if (!NUM_RAF) layoutNums();
   }
-  LAST_LABEL_N = -1; syncLabels();   // apply labels for the CURRENT zoom with the new data (no camera change)
+  // Grow the reusable number-element pool to cover the current data (capped — collision limits what's shown anyway).
+  const want = Math.min(ALL_LABELS.length, 90);
+  while (NUM_POOL.length < want) { const n = document.createElement('div'); n.style.display = 'none'; GLOBE_NUM_OV.appendChild(n); NUM_POOL.push(n); }
+  GLOBE.labelsData(ALL_LABELS);   // a dot on every labelable country; numbers come from the overlay
   const applyPolys = (features) => GLOBE.polygonsData(features)
     .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(u / max), 0.55) : 'rgba(28,44,49,0.28)'; })
     .polygonSideColor(() => 'rgba(0,0,0,0)').polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
