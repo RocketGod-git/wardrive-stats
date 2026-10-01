@@ -35,7 +35,9 @@ const CENTROIDS = {
 };
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const colorScale = (frac) => {
-  const a = frac < 0.5 ? mix([22,192,255],[25,224,180], frac/0.5) : mix([25,224,180],[255,207,74],(frac-0.5)/0.5);
+  // LAND heat ramp — deliberately WARM (violet → magenta → amber-gold) so filled countries never read as ocean
+  // against the dark-water globe. Blue was the old low end and looked like sea; violet/magenta/gold cannot.
+  const a = frac < 0.5 ? mix([124,86,230],[236,72,153], frac/0.5) : mix([236,72,153],[255,196,64],(frac-0.5)/0.5);
   return `rgb(${a[0]},${a[1]},${a[2]})`;
 };
 const rgba = (rgb, a) => rgb.replace('rgb(', 'rgba(').replace(')', `,${a})`);
