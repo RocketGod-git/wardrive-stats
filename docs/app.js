@@ -38,14 +38,14 @@ const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 // the bottom of the ramp (they all come out the same colour). A LOG map spreads that tail across the whole ramp so
 // the variation is actually visible. Returns 0..1.
 const heatFrac = (u, max) => max > 1 ? Math.log1p(Math.max(0, u)) / Math.log1p(max) : 0;
-// "Inferno"-style ramp (deep indigo → violet → magenta → orange → amber) — the SDR-waterfall look. Perceptually it
-// rises in brightness as well as hue, so bigger = hotter reads instantly, and it never looks like ocean.
-const HEAT = [[40,16,84], [96,24,148], [182,38,120], [236,88,54], [250,204,78]];
-const colorScale = (frac) => {
-  const f = Math.max(0, Math.min(1, frac)) * (HEAT.length - 1);
-  const i = Math.min(HEAT.length - 2, Math.floor(f));
-  const a = mix(HEAT[i], HEAT[i + 1], f - i);
-  return `rgb(${a[0]},${a[1]},${a[2]})`;
+// AURORA TEAL — ONE hue family (deep teal → brand accent → bright mint), so no country is an odd colour out: the US
+// is just the brightest teal, never a clashing gold. Lightness rides the log-spread magnitude; the numbers carry the
+// exact value. Matches the rest of the dashboard (accent #19e0b4).
+const AURORA = [[10, 70, 60], [25, 224, 180], [150, 255, 214]];
+const landColor = (u, max) => {
+  const f = heatFrac(u, max) * (AURORA.length - 1), i = Math.min(AURORA.length - 2, Math.floor(f));
+  const a = mix(AURORA[i], AURORA[i + 1], f - i);
+  return `rgba(${a[0]},${a[1]},${a[2]},0.74)`;
 };
 const rgba = (rgb, a) => rgb.replace('rgb(', 'rgba(').replace(')', `,${a})`);
 const isoOf = (f) => (f.properties.ISO_A2 || f.properties.ISO_A2_EH || '').toUpperCase();
@@ -187,7 +187,7 @@ function drawNewReturning(nr) {
 }
 
 // ---- globe: country borders + choropleth + floating live numbers ----
-let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LALT = 2.3, NUM_POOL = [], NUM_RAF = null, GLOBE_NUM_OV = null;
+let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LALT = 2.3, NUM_POOL = [], NUM_RAF = null, GLOBE_NUM_OV = null, RINGS_READY = false;
 // Dot size (globe-degrees) by magnitude — small + constant across zoom. Dots are real 3D objects, so the globe
 // mesh occludes the far-side ones for free.
 function dotRadiusFn(d) { return 0.26 + Math.sqrt(d.users / (LABEL_MAX || 1)) * 0.5; }
@@ -226,7 +226,7 @@ function layoutNums() {
     if (n.textContent !== txt) n.textContent = txt;
     n.style.cssText = 'position:absolute;left:' + sc.x + 'px;top:' + sc.y + 'px;transform:translate(-50%,-50%);' +
       "font:700 " + f + "px 'JetBrains Mono',monospace;color:#eef6f3;white-space:nowrap;pointer-events:none;" +
-      'text-shadow:0 1px 3px #000,0 0 7px rgba(0,0,0,.85);';
+      'text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.9),0 0 16px rgba(32,240,196,.4);';   // black legibility + teal aura
   }
   for (let i = used; i < NUM_POOL.length; i++) if (NUM_POOL[i].style.display !== 'none') NUM_POOL[i].style.display = 'none';
 }
@@ -239,12 +239,12 @@ function drawGlobe(countries) {
   ALL_LABELS = countries.filter(c => CENTROIDS[(c.code || '').toUpperCase()]).slice().sort((a, b) => b.users - a.users)
     .map(c => { const ll = CENTROIDS[c.code.toUpperCase()]; return { country: c.country, users: c.users, lat: ll[0], lng: ll[1] }; });
   $('globeLegend').innerHTML = countries.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(c =>
-    `<span class="chip"><span class="d" style="background:${colorScale(heatFrac(c.users, max))}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
+    `<span class="chip"><span class="d" style="background:${landColor(c.users, max)}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
   if (typeof Globe !== 'function') return;
   if (!GLOBE) {
     GLOBE = Globe()(el).backgroundColor('rgba(0,0,0,0)')
       .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-dark.jpg')
-      .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.18);
+      .showAtmosphere(true).atmosphereColor('#19e0b4').atmosphereAltitude(0.26);   // fatter teal glow halo
     GLOBE.controls().autoRotate = true; GLOBE.controls().autoRotateSpeed = 0.5; GLOBE.controls().enableZoom = true;
     GLOBE.width(el.clientWidth || 600).height(el.clientHeight || 440);
     GLOBE.pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);   // set ONCE — never on refresh, so the user's rotation/zoom is kept
@@ -253,6 +253,12 @@ function drawGlobe(countries) {
     GLOBE.labelLat(d => d.lat).labelLng(d => d.lng).labelText(() => '')
       .labelColor(() => 'rgba(120,224,255,0.92)').labelDotRadius(dotRadiusFn).labelResolution(2).labelAltitude(0.015)
       .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
+    // RADAR RINGS — teal rings pulse outward from each active country (on-theme: signals rippling across the map).
+    // Accessors set once, data fed per-draw. The colour interpolator fades the ring as it expands; busier countries
+    // (higher d.f) pulse faster and wider, so hot spots visibly throb.
+    GLOBE.ringColor(() => (t) => `rgba(32,240,196,${((1 - t) * 0.55).toFixed(3)})`)
+      .ringMaxRadius(d => 3 + d.f * 6).ringPropagationSpeed(1.7)
+      .ringRepeatPeriod(d => 1700 - d.f * 950).ringAltitude(0.012);
     window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
     // Build the number overlay once, then start the per-frame declutter loop.
     el.style.position = 'relative';
@@ -268,10 +274,15 @@ function drawGlobe(countries) {
   const want = Math.min(ALL_LABELS.length, 90);
   while (NUM_POOL.length < want) { const n = document.createElement('div'); n.style.display = 'none'; GLOBE_NUM_OV.appendChild(n); NUM_POOL.push(n); }
   GLOBE.labelsData(ALL_LABELS);   // a dot on every labelable country; numbers come from the overlay
+  // Top spots pulse. DEFER the first feed by a beat: adding rings on the very first paint (before the globe's
+  // coord system settles) spams THREE "NaN radius" warnings; once it's ready, feed immediately on every refresh.
+  const feedRings = () => GLOBE.ringsData(ALL_LABELS.slice(0, 12).map(d => ({ lat: d.lat, lng: d.lng, f: heatFrac(d.users, max) })));
+  if (RINGS_READY) feedRings(); else setTimeout(() => { RINGS_READY = true; feedRings(); }, 800);
   const applyPolys = (features) => GLOBE.polygonsData(features)
-    .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(heatFrac(u, max)), 0.62) : 'rgba(28,44,49,0.28)'; })
-    .polygonSideColor(() => 'rgba(0,0,0,0)').polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
-    .polygonAltitude(f => byIso[isoOf(f)] ? 0.014 : 0.006).polygonsTransitionDuration(300)
+    .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? landColor(u, max) : 'rgba(28,44,49,0.26)'; })
+    .polygonSideColor(() => 'rgba(0,0,0,0)')   // flat caps (per-country extruded side walls spammed NaN geometry on some countries)
+    .polygonStrokeColor(f => byIso[isoOf(f)] ? 'rgba(140,255,222,0.6)' : 'rgba(90,120,120,0.16)')   // active borders glow teal
+    .polygonAltitude(f => byIso[isoOf(f)] ? 0.02 : 0.006).polygonsTransitionDuration(300)
     .polygonLabel(f => { const u = byIso[isoOf(f)]; return u ? `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${f.properties.ADMIN}</b><br>${fmt(u)} active users</div>` : '' });
   if (GEO) applyPolys(GEO);
   else fetch('data/countries-110m.geojson').then(r => r.json()).then(j => { GEO = j.features; applyPolys(GEO); }).catch(() => {});
