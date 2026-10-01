@@ -219,3 +219,12 @@ function load() {
 }
 load();
 setInterval(load, 90000);   // semi-live: re-poll the static JSON every 90s (no GA4 cost)
+
+// ---- secret-codes modal ----
+(function () {
+  const m = $('secretModal'), open = () => m.style.display = 'flex', close = () => m.style.display = 'none';
+  $('secretPill')?.addEventListener('click', open);
+  $('secretClose')?.addEventListener('click', close);
+  m?.addEventListener('click', e => { if (e.target === m) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+})();

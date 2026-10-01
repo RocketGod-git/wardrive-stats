@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <header>
@@ -33,6 +33,7 @@
     <div class="tagline">aggregate · anonymous · auto-refreshed</div>
   </div>
   <div class="spacer"></div>
+  <button id="secretPill" class="secret-pill" title="shhh…">🔓 secret codes</button>
   <a class="play-btn" href="https://play.google.com/store/apps/details?id=com.rocketgod.wardrive" target="_blank" rel="noopener">
     <span class="play-tri">▶</span><span class="play-txt"><b>Get Wardrive Go</b><br>on Google Play</span>
   </a>
@@ -109,12 +110,33 @@
 
 <div id="error" class="err" style="display:none"></div>
 
+<!-- Secret codes modal -->
+<div id="secretModal" class="modal" style="display:none">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span>🔓 SECRET CODES</span>
+      <button id="secretClose" class="modal-x" aria-label="close">✕</button>
+    </div>
+    <p class="modal-intro">In the app, <b>tap the top header 6 times</b> to summon the code pad, then punch in a
+      5-digit code. You didn't get these from us. 😉</p>
+    <div class="code-row">
+      <span class="code">78287</span>
+      <div><div class="code-name">STATS</div><div class="code-desc">Opens this live globe + dashboard right inside the app.</div></div>
+    </div>
+    <div class="code-row">
+      <span class="code">69420</span>
+      <div><div class="code-name">WPA-SEC MODE</div><div class="code-desc">Auto-sends your captured handshakes &amp; PMKIDs to the wpa-sec crack pool.</div></div>
+    </div>
+    <p class="modal-foot">…more are hidden in the wild. Happy hunting.</p>
+  </div>
+</div>
+
 <footer>
   Wardrive Go — RocketGod · aggregate, anonymous app stats via the Google Analytics Data API.
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
