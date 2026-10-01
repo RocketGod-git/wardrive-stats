@@ -175,15 +175,23 @@ function drawNewReturning(nr) {
 }
 
 // ---- globe: country borders + choropleth + floating live numbers ----
-let GLOBE, GEO;
+let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LAST_LABEL_N = -1, LZ = null;
+// How many country numbers to show at a given camera altitude: zoomed out (alt ~2.3) → few (no clutter);
+// zoomed in (lower alt = more screen room) → progressively more. Clamped to what's available.
+function labelsForAlt(alt) { return Math.max(6, Math.min(ALL_LABELS.length, Math.round(8 + Math.max(0, 2.3 - alt) * 26))); }
+function syncLabels() {
+  if (!GLOBE) return;
+  const n = labelsForAlt(GLOBE.pointOfView().altitude);
+  if (n === LAST_LABEL_N) return;
+  LAST_LABEL_N = n; GLOBE.labelsData(ALL_LABELS.slice(0, n));
+}
 function drawGlobe(countries) {
   const el = $('globe');
   const byIso = {}; countries.forEach(c => { if (c.code) byIso[c.code.toUpperCase()] = c.users; });
   const max = Math.max(...countries.map(c => c.users), 1);
-  // Only label the TOP countries that have a centroid — stops the clustered-numbers pile-up in dense regions
-  // (Europe). The rest still show via the choropleth fill + hover tooltip + the legend below.
-  const labels = countries.filter(c => CENTROIDS[(c.code || '').toUpperCase()])
-    .slice().sort((a, b) => b.users - a.users).slice(0, 10)
+  LABEL_MAX = max;
+  // ALL labelable countries (have a centroid), biggest first — syncLabels() slices this per zoom level.
+  ALL_LABELS = countries.filter(c => CENTROIDS[(c.code || '').toUpperCase()]).slice().sort((a, b) => b.users - a.users)
     .map(c => { const ll = CENTROIDS[c.code.toUpperCase()]; return { country: c.country, users: c.users, lat: ll[0], lng: ll[1] }; });
   $('globeLegend').innerHTML = countries.slice().sort((a, b) => b.users - a.users).slice(0, 5).map(c =>
     `<span class="chip"><span class="d" style="background:${colorScale(c.users / max)}"></span>${c.country} <b>${fmt(c.users)}</b></span>`).join('');
@@ -195,14 +203,15 @@ function drawGlobe(countries) {
     GLOBE.controls().autoRotate = true; GLOBE.controls().autoRotateSpeed = 0.5; GLOBE.controls().enableZoom = true;
     GLOBE.width(el.clientWidth || 600).height(el.clientHeight || 440);
     GLOBE.pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);   // set ONCE — never on refresh, so the user's rotation/zoom is kept
+    // Label accessors set once; clean white numbers (not the magnitude palette) so they read against the blue.
+    GLOBE.labelLat(d => d.lat).labelLng(d => d.lng).labelText(d => fmt(d.users)).labelColor(() => '#eef6f3')
+      .labelSize(d => 2.5 + Math.sqrt(d.users / (LABEL_MAX || 1)) * 1.3).labelDotRadius(0.42).labelResolution(2).labelAltitude(0.013)
+      .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
+    // Reveal more / fewer numbers as the user zooms (throttled; altitude-driven).
+    GLOBE.controls().addEventListener('change', () => { clearTimeout(LZ); LZ = setTimeout(syncLabels, 120); });
     window.addEventListener('resize', () => GLOBE && GLOBE.width(el.clientWidth).height(el.clientHeight));
   }
-  // DATA ONLY on refresh (no width/pointOfView) → the globe doesn't snap back. Numbers are clean white (not the
-  // magnitude palette) so they read against the blue; size still scales a little with magnitude.
-  GLOBE.labelsData(labels).labelLat(d => d.lat).labelLng(d => d.lng).labelText(d => fmt(d.users))
-    .labelColor(() => '#eef6f3').labelSize(d => 2.5 + Math.sqrt(d.users / max) * 1.3)
-    .labelDotRadius(0.42).labelResolution(2).labelAltitude(0.013)
-    .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
+  LAST_LABEL_N = -1; syncLabels();   // apply labels for the CURRENT zoom with the new data (no camera change)
   const applyPolys = (features) => GLOBE.polygonsData(features)
     .polygonCapColor(f => { const u = byIso[isoOf(f)]; return u ? rgba(colorScale(u / max), 0.55) : 'rgba(28,44,49,0.28)'; })
     .polygonSideColor(() => 'rgba(0,0,0,0)').polygonStrokeColor(() => 'rgba(125,151,160,0.45)')
