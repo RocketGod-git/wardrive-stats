@@ -175,15 +175,23 @@ function drawNewReturning(nr) {
 }
 
 // ---- globe: country borders + choropleth + floating live numbers ----
-let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LAST_LABEL_N = -1, LZ = null;
-// How many country numbers to show at a given camera altitude: zoomed out (alt ~2.3) → few (no clutter);
-// zoomed in (lower alt = more screen room) → progressively more. Clamped to what's available.
-function labelsForAlt(alt) { return Math.max(6, Math.min(ALL_LABELS.length, Math.round(8 + Math.max(0, 2.3 - alt) * 26))); }
+let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LAST_LABEL_N = -1, LZ = null, LALT = 2.3;
+const DEFAULT_ALT = 2.3;
+// How many country numbers to show at a given camera altitude: zoomed out → few (no clutter); zoomed in → more.
+function labelsForAlt(alt) { return Math.max(6, Math.min(ALL_LABELS.length, Math.round(8 + Math.max(0, 2.3 - alt) * 30))); }
+// Label size is in GLOBE-DEGREES, so a fixed size balloons as you zoom in. Scale it ~proportional to altitude so
+// the ON-SCREEN size stays roughly constant → numbers shrink when zoomed in, letting more fit without overlap.
+function labelSizeFn(d) {
+  const base = 2.5 + Math.sqrt(d.users / (LABEL_MAX || 1)) * 1.3;
+  const z = Math.max(0.3, Math.min(1.15, LALT / DEFAULT_ALT));
+  return base * z;
+}
 function syncLabels() {
   if (!GLOBE) return;
-  const n = labelsForAlt(GLOBE.pointOfView().altitude);
-  if (n === LAST_LABEL_N) return;
-  LAST_LABEL_N = n; GLOBE.labelsData(ALL_LABELS.slice(0, n));
+  LALT = GLOBE.pointOfView().altitude;
+  GLOBE.labelSize(labelSizeFn);                       // rescale for the current zoom (keeps on-screen size steady)
+  const n = labelsForAlt(LALT);
+  if (n !== LAST_LABEL_N) { LAST_LABEL_N = n; GLOBE.labelsData(ALL_LABELS.slice(0, n)); }
 }
 function drawGlobe(countries) {
   const el = $('globe');
@@ -205,7 +213,7 @@ function drawGlobe(countries) {
     GLOBE.pointOfView({ lat: 25, lng: -30, altitude: 2.3 }, 0);   // set ONCE — never on refresh, so the user's rotation/zoom is kept
     // Label accessors set once; clean white numbers (not the magnitude palette) so they read against the blue.
     GLOBE.labelLat(d => d.lat).labelLng(d => d.lng).labelText(d => fmt(d.users)).labelColor(() => '#eef6f3')
-      .labelSize(d => 2.5 + Math.sqrt(d.users / (LABEL_MAX || 1)) * 1.3).labelDotRadius(0.42).labelResolution(2).labelAltitude(0.013)
+      .labelSize(labelSizeFn).labelDotRadius(0.42).labelResolution(2).labelAltitude(0.013)
       .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
     // Reveal more / fewer numbers as the user zooms (throttled; altitude-driven).
     GLOBE.controls().addEventListener('change', () => { clearTimeout(LZ); LZ = setTimeout(syncLabels, 120); });
