@@ -1,38 +1,38 @@
 {
-  "generatedAt": "2026-10-06T06:17:47Z",
+  "generatedAt": "2026-10-06T06:55:38Z",
   "realtime": {
-    "activeUsers": 29,
+    "activeUsers": 19,
     "events": [
       {
-        "name": "tool_opened",
-        "count": 132
-      },
-      {
         "name": "user_engagement",
-        "count": 86
+        "count": 41
       },
       {
         "name": "notable_spotted",
-        "count": 66
+        "count": 32
+      },
+      {
+        "name": "tool_opened",
+        "count": 27
       },
       {
         "name": "session_start",
-        "count": 20
+        "count": 17
       },
       {
         "name": "screen_view",
-        "count": 13
+        "count": 14
       },
       {
         "name": "app_version_active",
-        "count": 2
+        "count": 3
       },
       {
-        "name": "first_open",
+        "name": "app_update",
         "count": 1
       },
       {
-        "name": "os_update",
+        "name": "first_open",
         "count": 1
       }
     ],
@@ -40,26 +40,36 @@
       {
         "country": "United States",
         "code": "US",
-        "users": 17
+        "users": 9
+      },
+      {
+        "country": "Italy",
+        "code": "IT",
+        "users": 2
+      },
+      {
+        "country": "Netherlands",
+        "code": "NL",
+        "users": 2
+      },
+      {
+        "country": "Armenia",
+        "code": "AM",
+        "users": 1
       },
       {
         "country": "Australia",
         "code": "AU",
-        "users": 2
-      },
-      {
-        "country": "Unknown",
-        "code": "",
         "users": 1
       },
       {
-        "country": "Canada",
-        "code": "CA",
+        "country": "Costa Rica",
+        "code": "CR",
         "users": 1
       },
       {
-        "country": "Germany",
-        "code": "DE",
+        "country": "France",
+        "code": "FR",
         "users": 1
       },
       {
@@ -68,33 +78,8 @@
         "users": 1
       },
       {
-        "country": "New Zealand",
-        "code": "NZ",
-        "users": 1
-      },
-      {
-        "country": "North Macedonia",
-        "code": "MK",
-        "users": 1
-      },
-      {
         "country": "Poland",
         "code": "PL",
-        "users": 1
-      },
-      {
-        "country": "Taiwan",
-        "code": "TW",
-        "users": 1
-      },
-      {
-        "country": "Thailand",
-        "code": "TH",
-        "users": 1
-      },
-      {
-        "country": "United Arab Emirates",
-        "code": "AE",
         "users": 1
       }
     ]
@@ -103,39 +88,39 @@
     "1d": {
       "label": "24 hours",
       "totals": {
-        "active": 698,
-        "events": 31278,
-        "sessions": 2366,
-        "newUsers": 182,
-        "engagementMinutes": 23790,
-        "avgEngagementSec": 2045,
-        "eventsPerSession": 13.2,
-        "engagementRate": 77
+        "active": 707,
+        "events": 31775,
+        "sessions": 2397,
+        "newUsers": 193,
+        "engagementMinutes": 24072,
+        "avgEngagementSec": 2043,
+        "eventsPerSession": 13.3,
+        "engagementRate": 76
       },
       "newReturning": {
-        "new": 208,
+        "new": 217,
         "returning": 521
       },
       "events": [
         {
           "name": "notable_spotted",
-          "count": 10451
+          "count": 10547
         },
         {
           "name": "user_engagement",
-          "count": 7934
+          "count": 8050
         },
         {
           "name": "tool_opened",
-          "count": 6308
+          "count": 6499
         },
         {
           "name": "session_start",
-          "count": 2268
+          "count": 2298
         },
         {
           "name": "screen_view",
-          "count": 2017
+          "count": 2052
         },
         {
           "name": "capture",
@@ -143,11 +128,11 @@
         },
         {
           "name": "app_version_active",
-          "count": 363
+          "count": 378
         },
         {
           "name": "first_open",
-          "count": 182
+          "count": 193
         },
         {
           "name": "cluster_linked",
@@ -159,7 +144,7 @@
         },
         {
           "name": "sdr_connected",
-          "count": 79
+          "count": 81
         },
         {
           "name": "notable_aircraft",
@@ -171,7 +156,7 @@
         },
         {
           "name": "os_update",
-          "count": 13
+          "count": 14
         },
         {
           "name": "app_exception",
@@ -198,7 +183,7 @@
         {
           "country": "United States",
           "code": "US",
-          "users": 400
+          "users": 405
         },
         {
           "country": "Unknown",
@@ -221,14 +206,14 @@
           "users": 22
         },
         {
+          "country": "Unknown",
+          "code": "",
+          "users": 20
+        },
+        {
           "country": "Australia",
           "code": "AU",
           "users": 19
-        },
-        {
-          "country": "Unknown",
-          "code": "",
-          "users": 15
         },
         {
           "country": "Netherlands",
@@ -403,11 +388,15 @@
         },
         {
           "city": "Unknown",
-          "users": 57
+          "users": 62
         },
         {
           "city": "Los Angeles",
-          "users": 30
+          "users": 31
+        },
+        {
+          "city": "Atlanta",
+          "users": 16
         },
         {
           "city": "London",
@@ -418,22 +407,18 @@
           "users": 14
         },
         {
-          "city": "Atlanta",
-          "users": 13
+          "city": "Reston",
+          "users": 14
         },
         {
           "city": "Detroit",
-          "users": 13
-        },
-        {
-          "city": "Reston",
           "users": 13
         }
       ],
       "versions": [
         {
           "version": "3.1.20",
-          "users": 582
+          "users": 584
         },
         {
           "version": "3.1.98",
@@ -459,11 +444,11 @@
       "devices": [
         {
           "model": "OnePlus8Pro",
-          "users": 52
+          "users": 57
         },
         {
           "model": "sdk_gphone16k_arm64",
-          "users": 23
+          "users": 24
         },
         {
           "model": "SM-S938U",
@@ -485,7 +470,7 @@
       "android": [
         {
           "os": "Android 16",
-          "users": 290
+          "users": 292
         },
         {
           "os": "Android 17",
@@ -493,11 +478,11 @@
         },
         {
           "os": "Android 11",
-          "users": 71
+          "users": 77
         },
         {
           "os": "Android 15",
-          "users": 50
+          "users": 51
         },
         {
           "os": "Android 13",
@@ -511,7 +496,7 @@
       "languages": [
         {
           "language": "English",
-          "users": 569
+          "users": 578
         },
         {
           "language": "German",
@@ -593,7 +578,7 @@
         },
         {
           "h": 14,
-          "users": 159
+          "users": 160
         },
         {
           "h": 15,
@@ -621,21 +606,21 @@
         },
         {
           "h": 21,
-          "users": 97
+          "users": 101
         },
         {
           "h": 22,
-          "users": 62
+          "users": 83
         },
         {
           "h": 23,
-          "users": 50
+          "users": 53
         }
       ],
       "weekdays": [
         {
           "d": "Mon",
-          "users": 433
+          "users": 443
         },
         {
           "d": "Tue",
@@ -669,7 +654,7 @@
         },
         {
           "name": "Unknown",
-          "views": 927
+          "views": 962
         }
       ],
       "timeseries": []
@@ -677,39 +662,39 @@
     "7d": {
       "label": "7 days",
       "totals": {
-        "active": 1801,
-        "events": 127289,
-        "sessions": 10597,
-        "newUsers": 1091,
-        "engagementMinutes": 111225,
-        "avgEngagementSec": 3705,
+        "active": 1810,
+        "events": 127788,
+        "sessions": 10641,
+        "newUsers": 1102,
+        "engagementMinutes": 111507,
+        "avgEngagementSec": 3696,
         "eventsPerSession": 12.0,
         "engagementRate": 81
       },
       "newReturning": {
-        "new": 1168,
+        "new": 1177,
         "returning": 927
       },
       "events": [
         {
           "name": "user_engagement",
-          "count": 36476
+          "count": 36592
         },
         {
           "name": "notable_spotted",
-          "count": 35415
+          "count": 35511
         },
         {
           "name": "tool_opened",
-          "count": 21975
+          "count": 22166
         },
         {
           "name": "session_start",
-          "count": 10449
+          "count": 10479
         },
         {
           "name": "screen_view",
-          "count": 9751
+          "count": 9786
         },
         {
           "name": "capture",
@@ -721,11 +706,11 @@
         },
         {
           "name": "app_version_active",
-          "count": 2497
+          "count": 2512
         },
         {
           "name": "first_open",
-          "count": 1091
+          "count": 1102
         },
         {
           "name": "drone_detected",
@@ -741,15 +726,15 @@
         },
         {
           "name": "sdr_connected",
-          "count": 141
+          "count": 143
         },
         {
           "name": "os_update",
-          "count": 54
+          "count": 55
         },
         {
           "name": "app_update",
-          "count": 45
+          "count": 47
         },
         {
           "name": "app_exception",
@@ -784,7 +769,7 @@
         {
           "country": "United States",
           "code": "US",
-          "users": 893
+          "users": 898
         },
         {
           "country": "Unknown",
@@ -832,6 +817,11 @@
           "users": 21
         },
         {
+          "country": "Unknown",
+          "code": "",
+          "users": 20
+        },
+        {
           "country": "France",
           "code": "FR",
           "users": 18
@@ -840,11 +830,6 @@
           "country": "Poland",
           "code": "PL",
           "users": 18
-        },
-        {
-          "country": "Unknown",
-          "code": "",
-          "users": 15
         },
         {
           "country": "Thailand",
@@ -989,7 +974,7 @@
         },
         {
           "city": "Reston",
-          "users": 68
+          "users": 69
         },
         {
           "city": "Calpella",
@@ -997,15 +982,15 @@
         },
         {
           "city": "Atlanta",
-          "users": 63
-        },
-        {
-          "city": "Los Angeles",
-          "users": 61
+          "users": 66
         },
         {
           "city": "Unknown",
-          "users": 57
+          "users": 62
+        },
+        {
+          "city": "Los Angeles",
+          "users": 62
         },
         {
           "city": "New York",
@@ -1019,7 +1004,7 @@
       "versions": [
         {
           "version": "3.1.20",
-          "users": 1118
+          "users": 1120
         },
         {
           "version": "3.1.1",
@@ -1039,17 +1024,17 @@
         },
         {
           "version": "3.1.75",
-          "users": 39
+          "users": 40
         }
       ],
       "devices": [
         {
           "model": "OnePlus8Pro",
-          "users": 331
+          "users": 336
         },
         {
           "model": "sdk_gphone16k_arm64",
-          "users": 138
+          "users": 139
         },
         {
           "model": "SM-S938U",
@@ -1071,11 +1056,11 @@
       "android": [
         {
           "os": "Android 16",
-          "users": 737
+          "users": 739
         },
         {
           "os": "Android 11",
-          "users": 380
+          "users": 386
         },
         {
           "os": "Android 17",
@@ -1083,7 +1068,7 @@
         },
         {
           "os": "Android 15",
-          "users": 105
+          "users": 106
         },
         {
           "os": "Android 14",
@@ -1097,7 +1082,7 @@
       "languages": [
         {
           "language": "English",
-          "users": 1529
+          "users": 1538
         },
         {
           "language": "German",
@@ -1179,7 +1164,7 @@
         },
         {
           "h": 14,
-          "users": 449
+          "users": 450
         },
         {
           "h": 15,
@@ -1207,21 +1192,21 @@
         },
         {
           "h": 21,
-          "users": 306
+          "users": 307
         },
         {
           "h": 22,
-          "users": 260
+          "users": 276
         },
         {
           "h": 23,
-          "users": 216
+          "users": 219
         }
       ],
       "weekdays": [
         {
           "d": "Mon",
-          "users": 705
+          "users": 715
         },
         {
           "d": "Tue",
@@ -1255,7 +1240,7 @@
         },
         {
           "name": "Unknown",
-          "views": 943
+          "views": 978
         }
       ],
       "timeseries": [
@@ -1297,7 +1282,7 @@
         {
           "date": "2026-10-03",
           "activeUsers": 591,
-          "events": 18111,
+          "events": 18113,
           "notable": 5461,
           "captures": 375
         },
@@ -1310,9 +1295,9 @@
         },
         {
           "date": "2026-10-05",
-          "activeUsers": 433,
-          "events": 13650,
-          "notable": 4717,
+          "activeUsers": 443,
+          "events": 14147,
+          "notable": 4813,
           "captures": 462
         }
       ]
@@ -1320,39 +1305,39 @@
     "28d": {
       "label": "28 days",
       "totals": {
-        "active": 3677,
-        "events": 200710,
-        "sessions": 22615,
-        "newUsers": 3583,
-        "engagementMinutes": 259136,
-        "avgEngagementSec": 4228,
+        "active": 3686,
+        "events": 201209,
+        "sessions": 22653,
+        "newUsers": 3594,
+        "engagementMinutes": 259418,
+        "avgEngagementSec": 4223,
         "eventsPerSession": 8.9,
         "engagementRate": 76
       },
       "newReturning": {
-        "new": 3602,
+        "new": 3611,
         "returning": 1143
       },
       "events": [
         {
           "name": "user_engagement",
-          "count": 80385
+          "count": 80501
         },
         {
           "name": "notable_spotted",
-          "count": 36334
+          "count": 36430
         },
         {
           "name": "screen_view",
-          "count": 22555
+          "count": 22590
         },
         {
           "name": "tool_opened",
-          "count": 22274
+          "count": 22465
         },
         {
           "name": "session_start",
-          "count": 22228
+          "count": 22258
         },
         {
           "name": "capture",
@@ -1360,7 +1345,7 @@
         },
         {
           "name": "first_open",
-          "count": 3583
+          "count": 3594
         },
         {
           "name": "cluster_linked",
@@ -1368,11 +1353,11 @@
         },
         {
           "name": "app_version_active",
-          "count": 2667
+          "count": 2682
         },
         {
           "name": "app_update",
-          "count": 563
+          "count": 565
         },
         {
           "name": "drone_detected",
@@ -1388,7 +1373,7 @@
         },
         {
           "name": "sdr_connected",
-          "count": 141
+          "count": 143
         },
         {
           "name": "app_clear_data",
@@ -1396,7 +1381,7 @@
         },
         {
           "name": "os_update",
-          "count": 59
+          "count": 60
         },
         {
           "name": "app_exception",
@@ -1427,7 +1412,7 @@
         {
           "country": "United States",
           "code": "US",
-          "users": 1695
+          "users": 1700
         },
         {
           "country": "Unknown",
@@ -1495,6 +1480,11 @@
           "users": 22
         },
         {
+          "country": "Unknown",
+          "code": "",
+          "users": 20
+        },
+        {
           "country": "Switzerland",
           "code": "CH",
           "users": 19
@@ -1518,11 +1508,6 @@
           "country": "Thailand",
           "code": "TH",
           "users": 16
-        },
-        {
-          "country": "Unknown",
-          "code": "",
-          "users": 15
         },
         {
           "country": "Belgium",
@@ -1636,11 +1621,11 @@
         },
         {
           "city": "Reston",
-          "users": 213
+          "users": 214
         },
         {
           "city": "Los Angeles",
-          "users": 102
+          "users": 103
         },
         {
           "city": "Frankfurt am Main",
@@ -1648,21 +1633,21 @@
         },
         {
           "city": "Atlanta",
-          "users": 71
+          "users": 74
+        },
+        {
+          "city": "Unknown",
+          "users": 62
         },
         {
           "city": "New York",
           "users": 59
-        },
-        {
-          "city": "Unknown",
-          "users": 57
         }
       ],
       "versions": [
         {
           "version": "3.1.20",
-          "users": 1147
+          "users": 1149
         },
         {
           "version": "3.0.208",
@@ -1688,11 +1673,11 @@
       "devices": [
         {
           "model": "OnePlus8Pro",
-          "users": 1013
+          "users": 1018
         },
         {
           "model": "sdk_gphone16k_arm64",
-          "users": 505
+          "users": 506
         },
         {
           "model": "SM-S938U",
@@ -1714,11 +1699,11 @@
       "android": [
         {
           "os": "Android 16",
-          "users": 1495
+          "users": 1497
         },
         {
           "os": "Android 11",
-          "users": 1099
+          "users": 1105
         },
         {
           "os": "Android 17",
@@ -1726,7 +1711,7 @@
         },
         {
           "os": "Android 15",
-          "users": 163
+          "users": 164
         },
         {
           "os": "Android 14",
@@ -1740,7 +1725,7 @@
       "languages": [
         {
           "language": "English",
-          "users": 3237
+          "users": 3246
         },
         {
           "language": "German",
@@ -1822,7 +1807,7 @@
         },
         {
           "h": 14,
-          "users": 715
+          "users": 716
         },
         {
           "h": 15,
@@ -1850,21 +1835,21 @@
         },
         {
           "h": 21,
-          "users": 489
+          "users": 490
         },
         {
           "h": 22,
-          "users": 470
+          "users": 484
         },
         {
           "h": 23,
-          "users": 391
+          "users": 394
         }
       ],
       "weekdays": [
         {
           "d": "Mon",
-          "users": 1119
+          "users": 1129
         },
         {
           "d": "Tue",
@@ -1898,7 +1883,7 @@
         },
         {
           "name": "Unknown",
-          "views": 943
+          "views": 978
         }
       ],
       "timeseries": [
@@ -2087,7 +2072,7 @@
         {
           "date": "2026-10-03",
           "activeUsers": 591,
-          "events": 18111,
+          "events": 18113,
           "notable": 5461,
           "captures": 375
         },
@@ -2100,9 +2085,9 @@
         },
         {
           "date": "2026-10-05",
-          "activeUsers": 433,
-          "events": 13650,
-          "notable": 4717,
+          "activeUsers": 443,
+          "events": 14147,
+          "notable": 4813,
           "captures": 462
         }
       ]
@@ -2110,39 +2095,39 @@
     "90d": {
       "label": "90 days",
       "totals": {
-        "active": 4598,
-        "events": 212911,
-        "sessions": 24522,
-        "newUsers": 4547,
-        "engagementMinutes": 284686,
-        "avgEngagementSec": 3715,
+        "active": 4607,
+        "events": 213410,
+        "sessions": 24566,
+        "newUsers": 4558,
+        "engagementMinutes": 284968,
+        "avgEngagementSec": 3711,
         "eventsPerSession": 8.7,
         "engagementRate": 75
       },
       "newReturning": {
-        "new": 4565,
+        "new": 4574,
         "returning": 1147
       },
       "events": [
         {
           "name": "user_engagement",
-          "count": 86548
+          "count": 86664
         },
         {
           "name": "notable_spotted",
-          "count": 36334
+          "count": 36430
         },
         {
           "name": "screen_view",
-          "count": 25624
+          "count": 25659
         },
         {
           "name": "session_start",
-          "count": 24005
+          "count": 24035
         },
         {
           "name": "tool_opened",
-          "count": 22274
+          "count": 22465
         },
         {
           "name": "capture",
@@ -2150,7 +2135,7 @@
         },
         {
           "name": "first_open",
-          "count": 4547
+          "count": 4558
         },
         {
           "name": "cluster_linked",
@@ -2158,11 +2143,11 @@
         },
         {
           "name": "app_version_active",
-          "count": 2667
+          "count": 2682
         },
         {
           "name": "app_update",
-          "count": 784
+          "count": 786
         },
         {
           "name": "drone_detected",
@@ -2178,7 +2163,7 @@
         },
         {
           "name": "sdr_connected",
-          "count": 141
+          "count": 143
         },
         {
           "name": "app_clear_data",
@@ -2186,7 +2171,7 @@
         },
         {
           "name": "os_update",
-          "count": 59
+          "count": 60
         },
         {
           "name": "app_exception",
@@ -2217,7 +2202,7 @@
         {
           "country": "United States",
           "code": "US",
-          "users": 1985
+          "users": 1990
         },
         {
           "country": "Unknown",
@@ -2285,6 +2270,11 @@
           "users": 22
         },
         {
+          "country": "Unknown",
+          "code": "",
+          "users": 20
+        },
+        {
           "country": "Switzerland",
           "code": "CH",
           "users": 19
@@ -2308,11 +2298,6 @@
           "country": "Spain",
           "code": "ES",
           "users": 16
-        },
-        {
-          "country": "Unknown",
-          "code": "",
-          "users": 15
         },
         {
           "country": "Belgium",
@@ -2426,7 +2411,7 @@
         },
         {
           "city": "Reston",
-          "users": 213
+          "users": 214
         },
         {
           "city": "San Francisco",
@@ -2438,21 +2423,21 @@
         },
         {
           "city": "Los Angeles",
-          "users": 103
+          "users": 104
         },
         {
           "city": "Atlanta",
-          "users": 71
+          "users": 74
         },
         {
-          "city": "New York",
-          "users": 60
+          "city": "Unknown",
+          "users": 62
         }
       ],
       "versions": [
         {
           "version": "3.1.20",
-          "users": 1147
+          "users": 1149
         },
         {
           "version": "3.0.208",
@@ -2478,11 +2463,11 @@
       "devices": [
         {
           "model": "OnePlus8Pro",
-          "users": 1609
+          "users": 1614
         },
         {
           "model": "sdk_gphone16k_arm64",
-          "users": 821
+          "users": 822
         },
         {
           "model": "SM-S938U",
@@ -2504,11 +2489,11 @@
       "android": [
         {
           "os": "Android 16",
-          "users": 1814
+          "users": 1816
         },
         {
           "os": "Android 11",
-          "users": 1696
+          "users": 1702
         },
         {
           "os": "Android 17",
@@ -2516,7 +2501,7 @@
         },
         {
           "os": "Android 15",
-          "users": 163
+          "users": 164
         },
         {
           "os": "Android 14",
@@ -2530,7 +2515,7 @@
       "languages": [
         {
           "language": "English",
-          "users": 4155
+          "users": 4164
         },
         {
           "language": "German",
@@ -2612,7 +2597,7 @@
         },
         {
           "h": 14,
-          "users": 767
+          "users": 768
         },
         {
           "h": 15,
@@ -2640,21 +2625,21 @@
         },
         {
           "h": 21,
-          "users": 528
+          "users": 529
         },
         {
           "h": 22,
-          "users": 506
+          "users": 520
         },
         {
           "h": 23,
-          "users": 432
+          "users": 435
         }
       ],
       "weekdays": [
         {
           "d": "Mon",
-          "users": 1233
+          "users": 1243
         },
         {
           "d": "Tue",
@@ -2688,7 +2673,7 @@
         },
         {
           "name": "Unknown",
-          "views": 943
+          "views": 978
         }
       ],
       "timeseries": [
@@ -2947,7 +2932,7 @@
         {
           "date": "2026-10-03",
           "activeUsers": 591,
-          "events": 18111,
+          "events": 18113,
           "notable": 5461,
           "captures": 375
         },
@@ -2960,9 +2945,9 @@
         },
         {
           "date": "2026-10-05",
-          "activeUsers": 433,
-          "events": 13650,
-          "notable": 4717,
+          "activeUsers": 443,
+          "events": 14147,
+          "notable": 4813,
           "captures": 462
         }
       ]
