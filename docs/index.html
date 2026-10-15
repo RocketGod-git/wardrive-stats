@@ -24,7 +24,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
+<script>
+  // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
+  // "Get it on Google Play" button is pointless — they already have the app. Website visitors never carry either.
+  (function () {
+    var q = new URLSearchParams(location.search);
+    if (q.has('inapp') || q.has('t')) document.documentElement.classList.add('inapp');
+  })();
+</script>
+<style>.inapp #playBtn{display:none!important}</style>
 </head>
 <body>
 <header>
@@ -34,7 +43,7 @@
   </div>
   <div class="spacer"></div>
   <button id="secretPill" class="secret-pill" title="shhh…">🔓 secret codes</button>
-  <a class="play-btn" href="https://play.google.com/store/apps/details?id=com.rocketgod.wardrive" target="_blank" rel="noopener">
+  <a id="playBtn" class="play-btn" href="https://play.google.com/store/apps/details?id=com.rocketgod.wardrive" target="_blank" rel="noopener">
     <span class="play-tri">▶</span><span class="play-txt"><b>Get Wardrive Go</b><br>on Google Play</span>
   </a>
   <div id="sampleBadge" class="sample-badge" style="display:none">SAMPLE DATA</div>
@@ -120,10 +129,6 @@
     <p class="modal-intro">In the app, <b>tap the top header 6 times</b> to summon the code pad, then punch in a
       5-digit code.</p>
     <div class="code-row">
-      <span class="code">78287</span>
-      <div><div class="code-name">STATS</div><div class="code-desc">Opens this live globe + dashboard right inside the app.</div></div>
-    </div>
-    <div class="code-row">
       <span class="code">69420</span>
       <div><div class="code-name">WPA-SEC MODE</div><div class="code-desc">Auto-sends your captured handshakes &amp; PMKIDs to the wpa-sec crack pool.</div></div>
     </div>
@@ -137,6 +142,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>
