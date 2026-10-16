@@ -75,8 +75,8 @@ canvas{max-width:100%}
 .rchip.on{color:#07100e;background:var(--accent);border-color:var(--accent)}
 .rangebar-cur{color:var(--accent);font-size:12px;font-weight:700}
 .globe-panel{overflow:hidden}
-#globe{height:440px;display:flex;align-items:center;justify-content:center;cursor:grab}
-#globe canvas{display:block}
+#globe{height:440px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#globe canvas{display:block;touch-action:none}
 @media(max-width:600px){#globe{height:340px}}
 .globe-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .globe-legend .chip{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);
