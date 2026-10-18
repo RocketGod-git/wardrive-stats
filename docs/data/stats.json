@@ -1,62 +1,62 @@
 {
-  "generatedAt": "2026-10-18T20:08:54Z",
+  "generatedAt": "2026-10-18T20:36:38Z",
   "realtime": {
-    "activeUsers": 52,
+    "activeUsers": 38,
     "events": [
       {
-        "name": "user_engagement",
-        "count": 169
-      },
-      {
         "name": "notable_spotted",
-        "count": 146
+        "count": 312
       },
       {
         "name": "tool_opened",
-        "count": 72
+        "count": 209
+      },
+      {
+        "name": "user_engagement",
+        "count": 116
       },
       {
         "name": "screen_view",
-        "count": 47
+        "count": 32
       },
       {
         "name": "session_start",
-        "count": 41
-      },
-      {
-        "name": "app_version_active",
-        "count": 15
+        "count": 31
       },
       {
         "name": "capture",
-        "count": 11
+        "count": 12
       },
       {
-        "name": "cluster_linked",
-        "count": 9
+        "name": "app_version_active",
+        "count": 10
       },
       {
         "name": "sdr_connected",
         "count": 5
       },
       {
-        "name": "app_update",
-        "count": 4
-      },
-      {
-        "name": "first_open",
-        "count": 3
-      },
-      {
         "name": "export",
         "count": 2
       },
       {
-        "name": "app_remove",
+        "name": "app_update",
         "count": 1
       },
       {
-        "name": "chat_opened",
+        "name": "capture_cracked",
+        "count": 1
+      },
+      {
+        "name": "cluster_linked",
+        "count": 1
+      },
+      {
+        "name": "drone_detected",
+        "count": 1
+      },
+      {
+        "name": "notable_aircraft",
         "count": 1
       }
     ],
@@ -64,31 +64,16 @@
       {
         "country": "United States",
         "code": "US",
-        "users": 38
+        "users": 28
       },
       {
-        "country": "Unknown",
-        "code": "",
-        "users": 2
+        "country": "Poland",
+        "code": "PL",
+        "users": 3
       },
       {
         "country": "Canada",
         "code": "CA",
-        "users": 2
-      },
-      {
-        "country": "Argentina",
-        "code": "AR",
-        "users": 1
-      },
-      {
-        "country": "Brazil",
-        "code": "BR",
-        "users": 1
-      },
-      {
-        "country": "C\u00f4te d\u2019Ivoire",
-        "code": "CI",
         "users": 1
       },
       {
@@ -97,18 +82,13 @@
         "users": 1
       },
       {
-        "country": "France",
-        "code": "FR",
+        "country": "Israel",
+        "code": "IL",
         "users": 1
       },
       {
-        "country": "Germany",
-        "code": "DE",
-        "users": 1
-      },
-      {
-        "country": "Mexico",
-        "code": "MX",
+        "country": "Lithuania",
+        "code": "LT",
         "users": 1
       },
       {
@@ -117,13 +97,13 @@
         "users": 1
       },
       {
-        "country": "Poland",
-        "code": "PL",
+        "country": "Spain",
+        "code": "ES",
         "users": 1
       },
       {
-        "country": "Romania",
-        "code": "RO",
+        "country": "United Kingdom",
+        "code": "GB",
         "users": 1
       }
     ]
@@ -133,42 +113,42 @@
       "label": "24 hours",
       "totals": {
         "active": 589,
-        "events": 27120,
-        "sessions": 1490,
+        "events": 28268,
+        "sessions": 1499,
         "newUsers": 135,
-        "engagementMinutes": 16614,
-        "avgEngagementSec": 1692,
-        "eventsPerSession": 18.2,
+        "engagementMinutes": 16627,
+        "avgEngagementSec": 1694,
+        "eventsPerSession": 18.9,
         "engagementRate": 86
       },
       "newReturning": {
-        "new": 154,
+        "new": 156,
         "returning": 469
       },
       "events": [
         {
           "name": "notable_spotted",
-          "count": 9175
-        },
-        {
-          "name": "user_engagement",
-          "count": 5368
+          "count": 9199
         },
         {
           "name": "capture",
-          "count": 5070
+          "count": 6155
+        },
+        {
+          "name": "user_engagement",
+          "count": 5385
         },
         {
           "name": "tool_opened",
-          "count": 3421
+          "count": 3429
         },
         {
           "name": "session_start",
-          "count": 1453
+          "count": 1461
         },
         {
           "name": "screen_view",
-          "count": 1375
+          "count": 1381
         },
         {
           "name": "cluster_linked",
@@ -570,15 +550,15 @@
       "hours": [
         {
           "h": 0,
-          "users": 75
+          "users": 77
         },
         {
           "h": 1,
-          "users": 59
+          "users": 60
         },
         {
           "h": 2,
-          "users": 56
+          "users": 57
         },
         {
           "h": 3,
@@ -662,7 +642,7 @@
         },
         {
           "h": 23,
-          "users": 42
+          "users": 43
         }
       ],
       "weekdays": [
@@ -692,7 +672,7 @@
         },
         {
           "d": "Sun",
-          "users": 18
+          "users": 23
         }
       ],
       "screens": [
@@ -702,7 +682,7 @@
         },
         {
           "name": "Unknown",
-          "views": 26
+          "views": 32
         }
       ],
       "timeseries": [],
@@ -710,7 +690,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 13
+            "users": 18
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -732,7 +712,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 14
+            "users": 19
           }
         ],
         "skins": [
@@ -774,11 +754,11 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 28
+            "count": 40
           },
           {
             "name": "HOMECAM",
-            "count": 22
+            "count": 23
           },
           {
             "name": "USERFLAG",
@@ -789,19 +769,19 @@
             "count": 11
           },
           {
+            "name": "HEALTH",
+            "count": 10
+          },
+          {
             "name": "FLEET",
             "count": 7
           },
           {
-            "name": "HEALTH",
-            "count": 6
+            "name": "MESH",
+            "count": 5
           },
           {
             "name": "CCTV",
-            "count": 4
-          },
-          {
-            "name": "MESH",
             "count": 4
           },
           {
@@ -828,12 +808,12 @@
         "exportFormats": [],
         "captureKinds": [
           {
-            "name": "pmkid",
-            "count": 3
+            "name": "handshake",
+            "count": 921
           },
           {
-            "name": "handshake",
-            "count": 1
+            "name": "pmkid",
+            "count": 3
           }
         ],
         "sdr": [
@@ -858,42 +838,42 @@
       "label": "7 days",
       "totals": {
         "active": 1663,
-        "events": 150866,
-        "sessions": 10332,
+        "events": 152014,
+        "sessions": 10334,
         "newUsers": 782,
-        "engagementMinutes": 128133,
+        "engagementMinutes": 128146,
         "avgEngagementSec": 4623,
-        "eventsPerSession": 14.6,
+        "eventsPerSession": 14.7,
         "engagementRate": 88
       },
       "newReturning": {
-        "new": 844,
+        "new": 846,
         "returning": 1103
       },
       "events": [
         {
           "name": "notable_spotted",
-          "count": 42806
+          "count": 42830
         },
         {
           "name": "user_engagement",
-          "count": 39327
+          "count": 39344
         },
         {
           "name": "tool_opened",
-          "count": 31268
-        },
-        {
-          "name": "session_start",
-          "count": 10471
-        },
-        {
-          "name": "screen_view",
-          "count": 10112
+          "count": 31276
         },
         {
           "name": "capture",
-          "count": 9845
+          "count": 10930
+        },
+        {
+          "name": "session_start",
+          "count": 10479
+        },
+        {
+          "name": "screen_view",
+          "count": 10118
         },
         {
           "name": "app_version_active",
@@ -1299,7 +1279,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 261
+          "users": 262
         },
         {
           "h": 1,
@@ -1421,7 +1401,7 @@
         },
         {
           "d": "Sun",
-          "users": 519
+          "users": 521
         }
       ],
       "screens": [
@@ -1431,7 +1411,7 @@
         },
         {
           "name": "Unknown",
-          "views": 26
+          "views": 32
         }
       ],
       "timeseries": [
@@ -1480,23 +1460,23 @@
         {
           "date": "2026-10-17",
           "activeUsers": 584,
-          "events": 26895,
-          "notable": 9065,
-          "captures": 5066
+          "events": 27048,
+          "notable": 9070,
+          "captures": 5195
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 18,
-          "events": 225,
-          "notable": 110,
-          "captures": 4
+          "activeUsers": 23,
+          "events": 1220,
+          "notable": 129,
+          "captures": 960
         }
       ],
       "fun": {
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 13
+            "users": 18
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -1518,7 +1498,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 14
+            "users": 19
           }
         ],
         "skins": [
@@ -1560,11 +1540,11 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 28
+            "count": 40
           },
           {
             "name": "HOMECAM",
-            "count": 22
+            "count": 23
           },
           {
             "name": "USERFLAG",
@@ -1575,19 +1555,19 @@
             "count": 11
           },
           {
+            "name": "HEALTH",
+            "count": 10
+          },
+          {
             "name": "FLEET",
             "count": 7
           },
           {
-            "name": "HEALTH",
-            "count": 6
+            "name": "MESH",
+            "count": 5
           },
           {
             "name": "CCTV",
-            "count": 4
-          },
-          {
-            "name": "MESH",
             "count": 4
           },
           {
@@ -1614,12 +1594,12 @@
         "exportFormats": [],
         "captureKinds": [
           {
-            "name": "pmkid",
-            "count": 3
+            "name": "handshake",
+            "count": 921
           },
           {
-            "name": "handshake",
-            "count": 1
+            "name": "pmkid",
+            "count": 3
           }
         ],
         "sdr": [
@@ -1644,42 +1624,42 @@
       "label": "28 days",
       "totals": {
         "active": 4443,
-        "events": 432249,
+        "events": 433397,
         "sessions": 36301,
         "newUsers": 4194,
-        "engagementMinutes": 434743,
+        "engagementMinutes": 434757,
         "avgEngagementSec": 5871,
         "eventsPerSession": 11.9,
         "engagementRate": 85
       },
       "newReturning": {
-        "new": 4241,
+        "new": 4242,
         "returning": 1759
       },
       "events": [
         {
           "name": "user_engagement",
-          "count": 136632
+          "count": 136649
         },
         {
           "name": "notable_spotted",
-          "count": 105709
+          "count": 105733
         },
         {
           "name": "tool_opened",
-          "count": 76317
+          "count": 76325
         },
         {
           "name": "session_start",
-          "count": 37586
+          "count": 37594
         },
         {
           "name": "screen_view",
-          "count": 36186
+          "count": 36192
         },
         {
           "name": "capture",
-          "count": 18460
+          "count": 19545
         },
         {
           "name": "app_version_active",
@@ -2089,7 +2069,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 596
+          "users": 597
         },
         {
           "h": 1,
@@ -2211,7 +2191,7 @@
         },
         {
           "d": "Sun",
-          "users": 1298
+          "users": 1299
         }
       ],
       "screens": [
@@ -2221,7 +2201,7 @@
         },
         {
           "name": "Unknown",
-          "views": 26
+          "views": 32
         }
       ],
       "timeseries": [
@@ -2417,23 +2397,23 @@
         {
           "date": "2026-10-17",
           "activeUsers": 584,
-          "events": 26895,
-          "notable": 9065,
-          "captures": 5066
+          "events": 27048,
+          "notable": 9070,
+          "captures": 5195
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 18,
-          "events": 225,
-          "notable": 110,
-          "captures": 4
+          "activeUsers": 23,
+          "events": 1220,
+          "notable": 129,
+          "captures": 960
         }
       ],
       "fun": {
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 13
+            "users": 18
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -2455,7 +2435,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 14
+            "users": 19
           }
         ],
         "skins": [
@@ -2497,11 +2477,11 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 28
+            "count": 40
           },
           {
             "name": "HOMECAM",
-            "count": 22
+            "count": 23
           },
           {
             "name": "USERFLAG",
@@ -2512,19 +2492,19 @@
             "count": 11
           },
           {
+            "name": "HEALTH",
+            "count": 10
+          },
+          {
             "name": "FLEET",
             "count": 7
           },
           {
-            "name": "HEALTH",
-            "count": 6
+            "name": "MESH",
+            "count": 5
           },
           {
             "name": "CCTV",
-            "count": 4
-          },
-          {
-            "name": "MESH",
             "count": 4
           },
           {
@@ -2551,12 +2531,12 @@
         "exportFormats": [],
         "captureKinds": [
           {
-            "name": "pmkid",
-            "count": 3
+            "name": "handshake",
+            "count": 921
           },
           {
-            "name": "handshake",
-            "count": 1
+            "name": "pmkid",
+            "count": 3
           }
         ],
         "sdr": [
@@ -2581,10 +2561,10 @@
       "label": "90 days",
       "totals": {
         "active": 6019,
-        "events": 460693,
+        "events": 461841,
         "sessions": 40751,
         "newUsers": 5948,
-        "engagementMinutes": 497497,
+        "engagementMinutes": 497510,
         "avgEngagementSec": 4959,
         "eventsPerSession": 11.3,
         "engagementRate": 82
@@ -2596,27 +2576,27 @@
       "events": [
         {
           "name": "user_engagement",
-          "count": 152465
+          "count": 152482
         },
         {
           "name": "notable_spotted",
-          "count": 105709
+          "count": 105733
         },
         {
           "name": "tool_opened",
-          "count": 76317
+          "count": 76325
         },
         {
           "name": "screen_view",
-          "count": 42516
+          "count": 42522
         },
         {
           "name": "session_start",
-          "count": 41818
+          "count": 41826
         },
         {
           "name": "capture",
-          "count": 18460
+          "count": 19545
         },
         {
           "name": "app_version_active",
@@ -3026,7 +3006,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 606
+          "users": 607
         },
         {
           "h": 1,
@@ -3148,7 +3128,7 @@
         },
         {
           "d": "Sun",
-          "users": 1629
+          "users": 1630
         }
       ],
       "screens": [
@@ -3158,7 +3138,7 @@
         },
         {
           "name": "Unknown",
-          "views": 26
+          "views": 32
         }
       ],
       "timeseries": [
@@ -3515,23 +3495,23 @@
         {
           "date": "2026-10-17",
           "activeUsers": 584,
-          "events": 26895,
-          "notable": 9065,
-          "captures": 5066
+          "events": 27048,
+          "notable": 9070,
+          "captures": 5195
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 18,
-          "events": 225,
-          "notable": 110,
-          "captures": 4
+          "activeUsers": 23,
+          "events": 1220,
+          "notable": 129,
+          "captures": 960
         }
       ],
       "fun": {
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 13
+            "users": 18
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -3553,7 +3533,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 14
+            "users": 19
           }
         ],
         "skins": [
@@ -3595,11 +3575,11 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 28
+            "count": 40
           },
           {
             "name": "HOMECAM",
-            "count": 22
+            "count": 23
           },
           {
             "name": "USERFLAG",
@@ -3610,19 +3590,19 @@
             "count": 11
           },
           {
+            "name": "HEALTH",
+            "count": 10
+          },
+          {
             "name": "FLEET",
             "count": 7
           },
           {
-            "name": "HEALTH",
-            "count": 6
+            "name": "MESH",
+            "count": 5
           },
           {
             "name": "CCTV",
-            "count": 4
-          },
-          {
-            "name": "MESH",
             "count": 4
           },
           {
@@ -3649,12 +3629,12 @@
         "exportFormats": [],
         "captureKinds": [
           {
-            "name": "pmkid",
-            "count": 3
+            "name": "handshake",
+            "count": 921
           },
           {
-            "name": "handshake",
-            "count": 1
+            "name": "pmkid",
+            "count": 3
           }
         ],
         "sdr": [
