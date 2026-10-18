@@ -1,54 +1,62 @@
 {
-  "generatedAt": "2026-10-18T23:07:39Z",
+  "generatedAt": "2026-10-18T23:33:59Z",
   "realtime": {
-    "activeUsers": 46,
+    "activeUsers": 36,
     "events": [
       {
-        "name": "notable_spotted",
-        "count": 154
+        "name": "user_engagement",
+        "count": 120
       },
       {
-        "name": "user_engagement",
-        "count": 134
+        "name": "notable_spotted",
+        "count": 119
       },
       {
         "name": "tool_opened",
-        "count": 114
+        "count": 116
       },
       {
         "name": "capture",
-        "count": 52
-      },
-      {
-        "name": "screen_view",
-        "count": 46
+        "count": 55
       },
       {
         "name": "session_start",
-        "count": 37
+        "count": 35
+      },
+      {
+        "name": "screen_view",
+        "count": 33
+      },
+      {
+        "name": "cluster_linked",
+        "count": 28
       },
       {
         "name": "app_version_active",
-        "count": 21
+        "count": 19
       },
       {
         "name": "first_open",
         "count": 8
       },
       {
-        "name": "app_update",
+        "name": "app_remove",
         "count": 2
       },
       {
-        "name": "export",
+        "name": "drone_detected",
         "count": 2
       },
       {
-        "name": "language_set",
+        "name": "sdr_connected",
+        "count": 2
+      },
+      {
+        "name": "app_exception",
         "count": 1
       },
       {
-        "name": "notable_aircraft",
+        "name": "export",
         "count": 1
       }
     ],
@@ -56,26 +64,31 @@
       {
         "country": "United States",
         "code": "US",
-        "users": 34
+        "users": 23
       },
       {
         "country": "Unknown",
         "code": "",
-        "users": 4
+        "users": 3
       },
       {
-        "country": "Finland",
-        "code": "FI",
-        "users": 2
+        "country": "Australia",
+        "code": "AU",
+        "users": 3
+      },
+      {
+        "country": "Cuba",
+        "code": "CU",
+        "users": 1
+      },
+      {
+        "country": "France",
+        "code": "FR",
+        "users": 1
       },
       {
         "country": "Germany",
         "code": "DE",
-        "users": 2
-      },
-      {
-        "country": "Canada",
-        "code": "CA",
         "users": 1
       },
       {
@@ -84,13 +97,18 @@
         "users": 1
       },
       {
-        "country": "Spain",
-        "code": "ES",
+        "country": "New Zealand",
+        "code": "NZ",
         "users": 1
       },
       {
-        "country": "United Kingdom",
-        "code": "GB",
+        "country": "Poland",
+        "code": "PL",
+        "users": 1
+      },
+      {
+        "country": "Romania",
+        "code": "RO",
         "users": 1
       }
     ]
@@ -100,11 +118,11 @@
       "label": "24 hours",
       "totals": {
         "active": 596,
-        "events": 28699,
-        "sessions": 1532,
+        "events": 28717,
+        "sessions": 1534,
         "newUsers": 138,
-        "engagementMinutes": 16820,
-        "avgEngagementSec": 1693,
+        "engagementMinutes": 16823,
+        "avgEngagementSec": 1694,
         "eventsPerSession": 18.7,
         "engagementRate": 86
       },
@@ -123,19 +141,19 @@
         },
         {
           "name": "user_engagement",
-          "count": 5484
+          "count": 5487
         },
         {
           "name": "tool_opened",
-          "count": 3546
+          "count": 3554
         },
         {
           "name": "session_start",
-          "count": 1490
+          "count": 1493
         },
         {
           "name": "screen_view",
-          "count": 1416
+          "count": 1418
         },
         {
           "name": "cluster_linked",
@@ -143,7 +161,7 @@
         },
         {
           "name": "app_version_active",
-          "count": 379
+          "count": 380
         },
         {
           "name": "first_open",
@@ -159,7 +177,7 @@
         },
         {
           "name": "app_remove",
-          "count": 20
+          "count": 21
         },
         {
           "name": "notable_aircraft",
@@ -537,7 +555,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 85
+          "users": 87
         },
         {
           "h": 1,
@@ -557,7 +575,7 @@
         },
         {
           "h": 5,
-          "users": 77
+          "users": 78
         },
         {
           "h": 6,
@@ -625,7 +643,7 @@
         },
         {
           "h": 22,
-          "users": 48
+          "users": 49
         },
         {
           "h": 23,
@@ -659,7 +677,7 @@
         },
         {
           "d": "Sun",
-          "users": 36
+          "users": 38
         }
       ],
       "screens": [
@@ -669,7 +687,7 @@
         },
         {
           "name": "Unknown",
-          "views": 67
+          "views": 69
         }
       ],
       "timeseries": [],
@@ -677,7 +695,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 29
+            "users": 31
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -703,7 +721,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 32
+            "users": 34
           }
         ],
         "skins": [
@@ -839,10 +857,10 @@
       "label": "7 days",
       "totals": {
         "active": 1666,
-        "events": 152456,
+        "events": 152474,
         "sessions": 10344,
         "newUsers": 785,
-        "engagementMinutes": 128342,
+        "engagementMinutes": 128344,
         "avgEngagementSec": 4622,
         "eventsPerSession": 14.7,
         "engagementRate": 88
@@ -858,11 +876,11 @@
         },
         {
           "name": "user_engagement",
-          "count": 39452
+          "count": 39455
         },
         {
           "name": "tool_opened",
-          "count": 31393
+          "count": 31401
         },
         {
           "name": "capture",
@@ -870,15 +888,15 @@
         },
         {
           "name": "session_start",
-          "count": 10508
+          "count": 10511
         },
         {
           "name": "screen_view",
-          "count": 10153
+          "count": 10155
         },
         {
           "name": "app_version_active",
-          "count": 2269
+          "count": 2270
         },
         {
           "name": "cluster_linked",
@@ -902,7 +920,7 @@
         },
         {
           "name": "app_remove",
-          "count": 178
+          "count": 179
         },
         {
           "name": "export",
@@ -1280,7 +1298,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 269
+          "users": 270
         },
         {
           "h": 1,
@@ -1300,7 +1318,7 @@
         },
         {
           "h": 5,
-          "users": 339
+          "users": 340
         },
         {
           "h": 6,
@@ -1368,7 +1386,7 @@
         },
         {
           "h": 22,
-          "users": 272
+          "users": 273
         },
         {
           "h": 23,
@@ -1402,7 +1420,7 @@
         },
         {
           "d": "Sun",
-          "users": 527
+          "users": 528
         }
       ],
       "screens": [
@@ -1412,7 +1430,7 @@
         },
         {
           "name": "Unknown",
-          "views": 67
+          "views": 69
         }
       ],
       "timeseries": [
@@ -1461,14 +1479,14 @@
         {
           "date": "2026-10-17",
           "activeUsers": 586,
-          "events": 27122,
+          "events": 27133,
           "notable": 9107,
           "captures": 5195
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 36,
-          "events": 1577,
+          "activeUsers": 38,
+          "events": 1584,
           "notable": 221,
           "captures": 963
         }
@@ -1477,7 +1495,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 29
+            "users": 31
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -1503,7 +1521,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 32
+            "users": 34
           }
         ],
         "skins": [
@@ -1639,10 +1657,10 @@
       "label": "28 days",
       "totals": {
         "active": 4446,
-        "events": 433839,
+        "events": 433857,
         "sessions": 36322,
         "newUsers": 4197,
-        "engagementMinutes": 434952,
+        "engagementMinutes": 434955,
         "avgEngagementSec": 5870,
         "eventsPerSession": 11.9,
         "engagementRate": 85
@@ -1654,7 +1672,7 @@
       "events": [
         {
           "name": "user_engagement",
-          "count": 136757
+          "count": 136760
         },
         {
           "name": "notable_spotted",
@@ -1662,15 +1680,15 @@
         },
         {
           "name": "tool_opened",
-          "count": 76442
+          "count": 76450
         },
         {
           "name": "session_start",
-          "count": 37623
+          "count": 37626
         },
         {
           "name": "screen_view",
-          "count": 36227
+          "count": 36229
         },
         {
           "name": "capture",
@@ -1678,7 +1696,7 @@
         },
         {
           "name": "app_version_active",
-          "count": 6048
+          "count": 6049
         },
         {
           "name": "cluster_linked",
@@ -1706,7 +1724,7 @@
         },
         {
           "name": "app_remove",
-          "count": 585
+          "count": 586
         },
         {
           "name": "secret_unlock",
@@ -2084,7 +2102,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 601
+          "users": 602
         },
         {
           "h": 1,
@@ -2104,7 +2122,7 @@
         },
         {
           "h": 5,
-          "users": 783
+          "users": 784
         },
         {
           "h": 6,
@@ -2172,7 +2190,7 @@
         },
         {
           "h": 22,
-          "users": 682
+          "users": 683
         },
         {
           "h": 23,
@@ -2206,7 +2224,7 @@
         },
         {
           "d": "Sun",
-          "users": 1304
+          "users": 1305
         }
       ],
       "screens": [
@@ -2216,7 +2234,7 @@
         },
         {
           "name": "Unknown",
-          "views": 67
+          "views": 69
         }
       ],
       "timeseries": [
@@ -2412,14 +2430,14 @@
         {
           "date": "2026-10-17",
           "activeUsers": 586,
-          "events": 27122,
+          "events": 27133,
           "notable": 9107,
           "captures": 5195
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 36,
-          "events": 1577,
+          "activeUsers": 38,
+          "events": 1584,
           "notable": 221,
           "captures": 963
         }
@@ -2428,7 +2446,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 29
+            "users": 31
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -2454,7 +2472,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 32
+            "users": 34
           }
         ],
         "skins": [
@@ -2590,10 +2608,10 @@
       "label": "90 days",
       "totals": {
         "active": 6022,
-        "events": 462283,
+        "events": 462301,
         "sessions": 40776,
         "newUsers": 5951,
-        "engagementMinutes": 497706,
+        "engagementMinutes": 497708,
         "avgEngagementSec": 4959,
         "eventsPerSession": 11.3,
         "engagementRate": 82
@@ -2605,7 +2623,7 @@
       "events": [
         {
           "name": "user_engagement",
-          "count": 152590
+          "count": 152593
         },
         {
           "name": "notable_spotted",
@@ -2613,15 +2631,15 @@
         },
         {
           "name": "tool_opened",
-          "count": 76442
+          "count": 76450
         },
         {
           "name": "screen_view",
-          "count": 42557
+          "count": 42559
         },
         {
           "name": "session_start",
-          "count": 41855
+          "count": 41858
         },
         {
           "name": "capture",
@@ -2629,7 +2647,7 @@
         },
         {
           "name": "app_version_active",
-          "count": 6048
+          "count": 6049
         },
         {
           "name": "first_open",
@@ -2657,7 +2675,7 @@
         },
         {
           "name": "app_remove",
-          "count": 609
+          "count": 610
         },
         {
           "name": "secret_unlock",
@@ -3035,7 +3053,7 @@
       "hours": [
         {
           "h": 0,
-          "users": 611
+          "users": 612
         },
         {
           "h": 1,
@@ -3055,7 +3073,7 @@
         },
         {
           "h": 5,
-          "users": 816
+          "users": 817
         },
         {
           "h": 6,
@@ -3123,7 +3141,7 @@
         },
         {
           "h": 22,
-          "users": 769
+          "users": 770
         },
         {
           "h": 23,
@@ -3157,7 +3175,7 @@
         },
         {
           "d": "Sun",
-          "users": 1635
+          "users": 1636
         }
       ],
       "screens": [
@@ -3167,7 +3185,7 @@
         },
         {
           "name": "Unknown",
-          "views": 67
+          "views": 69
         }
       ],
       "timeseries": [
@@ -3524,14 +3542,14 @@
         {
           "date": "2026-10-17",
           "activeUsers": 586,
-          "events": 27122,
+          "events": 27133,
           "notable": 9107,
           "captures": 5195
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 36,
-          "events": 1577,
+          "activeUsers": 38,
+          "events": 1584,
           "notable": 221,
           "captures": 963
         }
@@ -3540,7 +3558,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 29
+            "users": 31
           },
           {
             "name": "adapter: MediaTek MT7612U \u00b7 mt76x2u ",
@@ -3566,7 +3584,7 @@
         "extAdapter": [
           {
             "name": "false",
-            "users": 32
+            "users": 34
           }
         ],
         "skins": [
