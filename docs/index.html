@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=21">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
   // "Get it on Google Play" button is pointless — they already have the app. Website visitors never carry either.
@@ -116,12 +116,12 @@
     <div class="panel"><h2>Android version</h2><div class="list" id="android"></div></div>
   </section>
 
-  <!-- Fun data — breakdowns by the app's custom dimensions (adapters, themes, finds, tools…). Custom dimensions
-       aren't retroactive, so empty cards show a "collecting" placeholder until data flows. -->
+  <!-- Fun data — breakdowns by the app's custom dimensions (adapters, themes, finds, tools…). Empty cards show
+       a "no data" placeholder. -->
   <section>
     <div class="fun-head">
       <h2>🎲 Fun data</h2>
-      <span class="fun-sub">what wardrivers run, find &amp; tweak · new cards fill in as the latest app version rolls out</span>
+      <span class="fun-sub">what wardrivers run, find &amp; tweak</span>
     </div>
   </section>
   <section class="grid cards" id="funCards"></section>
@@ -195,6 +195,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=19"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>

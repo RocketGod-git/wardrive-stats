@@ -57,7 +57,7 @@ The page renders whatever is in `docs/data/stats.json` (the committed sample unt
 ## Fun data (custom dimensions)
 The "Fun data" cards (adapters, themes, notable categories, tools, captures, chat, …) read the app's **custom
 event parameters + user properties**, which GA4 only reports once they're registered as custom dimensions — and
-registration is **not retroactive** (cards say "Collecting" until data flows).
+registration is **not retroactive** (empty cards show a "no data" placeholder).
 
 Register them once: *Actions → "Register GA4 custom dimensions" → Run workflow* (tick *Dry run* first to preview).
 It reuses `GA4_SA` / `GA4_PROPERTY_ID`, is idempotent (skips what exists), and needs the service account to be

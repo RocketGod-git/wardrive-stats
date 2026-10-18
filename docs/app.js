@@ -148,7 +148,7 @@ function renderRange() {
 
 // ---- Fun data: breakdowns by the app's CUSTOM dimensions (user properties + event params) ----
 // Custom dimensions aren't retroactive, so every card has a friendly "collecting" state until values arrive.
-const COLLECTING = 'Collecting — new data starts flowing soon';
+const COLLECTING = 'No data for this range yet';
 const FUN_COLORS = [ACCENT, 'rgba(22,192,255,.75)', '#ffcf4a', '#ff4d6d', 'rgba(25,224,180,.42)',
   'rgba(22,192,255,.38)', MUTED, 'rgba(255,207,74,.5)', 'rgba(255,77,109,.5)', '#2a3f45'];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
