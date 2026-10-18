@@ -1,0 +1,36 @@
+name: Register GA4 custom dimensions
+
+# ONE-OFF (manual): registers the GA4 custom dimensions the dashboard's "Fun data" cards need, via the Google
+# Analytics Admin API. Idempotent — only creates what's missing, so re-running is harmless. Uses the same two
+# secrets as stats.yml (GA4_SA + GA4_PROPERTY_ID), but needs WRITE access: give the service account the "Editor"
+# role on the GA4 property (Viewer is enough for the stats fetch) and enable the "Google Analytics Admin API" in
+# its Cloud project. If either is missing, the log + job summary say exactly what to fix (and list the dimensions
+# so they can be created by hand). Nothing here ever prints the key.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (list what would be created, change nothing)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Register custom dimensions
+        env:
+          GA4_SA: ${{ secrets.GA4_SA }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+        run: |
+          python scripts/register_dims.py ${{ inputs.dry_run && '--dry-run' || '' }}

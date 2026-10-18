@@ -41,7 +41,7 @@ def main():
             px[x, y] = c
     base = img.convert("RGBA")
 
-    # globe placement — centre it on the right third
+    # globe placement — center it on the right third
     cx, cy = 862, 315
     g = Image.open(GLOBE).convert("RGBA")
     gw, gh = g.size

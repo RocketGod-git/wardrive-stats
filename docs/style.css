@@ -105,5 +105,17 @@ canvas{max-width:100%}
 .list .row .track{width:84px;height:5px;border-radius:5px;background:var(--panel2);overflow:hidden}
 .list .row .fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent))}
 
+/* Fun data (custom-dimension breakdowns) */
+.fun-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:8px;padding-top:16px;border-top:1px dashed var(--line)}
+.fun-head h2{color:var(--accent);margin:0}
+.fun-sub{color:var(--muted);font-size:11px}
+.collecting{color:var(--muted);font-size:12px;padding:18px 0;text-align:center;opacity:.85}
+.collecting::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;
+  background:var(--gold);box-shadow:0 0 8px var(--gold);animation:pulse 1.6s ease-in-out infinite;vertical-align:1px}
+.chat-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:10px}
+.chat-stats .mini{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.chat-stats .mini .k{color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-stats .mini .v{font-size:22px;font-weight:800;color:var(--accent);margin-top:4px}
+
 footer{color:var(--muted);font-size:11px;text-align:center;margin:26px 0 6px}
 .err{background:rgba(255,77,109,.12);border:1px solid var(--hot);color:#ffd0d8;border-radius:var(--radius);padding:14px;font-size:13px}

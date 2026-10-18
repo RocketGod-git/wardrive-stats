@@ -7,9 +7,11 @@ GA4_PROPERTY_ID.
 
 Produces a REALTIME block (last 30 min) plus a `ranges` map — 24 hours / 7 / 28 / 90 days — each with the full
 aggregate set (active users, totals + engagement quality, events, countries, cities, devices, OS, languages,
-new-vs-returning, hour-of-day, day-of-week, top screens, and a daily timeseries). The dashboard switches between
-them client-side. Only AGGREGATE, non-PII dimensions are queried. Every report is isolated in safe() so one
-failure can't sink the file.
+new-vs-returning, hour-of-day, day-of-week, top screens, and a daily timeseries) plus a `fun` block of breakdowns
+by the app's CUSTOM dimensions (adapters, themes, notable categories, tools, …; registered once by
+scripts/register_dims.py — unregistered ones just come back empty). The dashboard switches between them
+client-side. Only AGGREGATE, non-PII dimensions are queried. Every report is isolated in safe() so one failure
+can't sink the file.
 """
 import json
 import os
@@ -94,6 +96,75 @@ def run():
                 v = "Unknown"
             out.append({key: v, vk: int(float(x.metric_values[0].value))})
         return out
+
+    # ---- "Fun data": CUSTOM dimensions (app user properties + event params; registered by register_dims.py) ----
+    # Ask GA4 once which custom dimensions exist, so unregistered ones are skipped quietly instead of erroring on
+    # every run. If the metadata call itself fails (None), every query is attempted — safe() still absorbs failures.
+    def custom_dims():
+        md = c.get_metadata(name=f"{p}/metadata")
+        return {d.api_name for d in md.dimensions if d.api_name.startswith("custom")}
+    custom = safe("metadata", custom_dims, None)
+    if custom is not None:
+        print(f"custom dimensions registered: {sorted(custom) or 'none'}")
+
+    def brk(dim, days, event=None, limit=10):
+        """Top values of one custom dimension — activeUsers for a user property, eventCount of [event] for an event
+        param. '(not set)' rows (app versions older than the param) are dropped. Unregistered dims → []."""
+        if custom is not None and dim not in custom:
+            return []
+        metric, vk = ("eventCount", "count") if event else ("activeUsers", "users")
+        r = report([dim], [metric], days, limit=limit + 1, order_metric=metric,
+                   dim_filter=name_filter(event) if event else None)
+        out = []
+        for x in rows(r):
+            v = x.dimension_values[0].value
+            if v in ("(not set)", ""):
+                continue
+            out.append({"name": v, vk: int(float(x.metric_values[0].value))})
+        return out[:limit]
+
+    def ev_metric(event, metric, days):
+        r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name=metric)],
+            date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")], dimension_filter=name_filter(event)))
+        return int(float(r.rows[0].metric_values[0].value)) if r.rows else 0
+
+    def fun_block(days, label):
+        def f(key, fn):
+            return safe(f"{label} fun {key}", fn, [])
+
+        def chat():
+            return {
+                "openedUsers": safe(f"{label} chat opened", lambda: ev_metric("chat_opened", "activeUsers", days), 0),
+                "senders": safe(f"{label} chat senders", lambda: ev_metric("chat_sent", "activeUsers", days), 0),
+                "sent": safe(f"{label} chat sent", lambda: ev_metric("chat_sent", "eventCount", days), 0),
+                "byKind": f("chat kind", lambda: brk("customEvent:kind", days, "chat_sent", 6)),
+                "replies": f("chat reply", lambda: brk("customEvent:reply", days, "chat_sent", 3)),
+                "statsViews": f("chat stats views", lambda: brk("customEvent:src", days, "chat_stats_view", 3)),
+            }
+
+        return {
+            # user properties → active users per value
+            "adapters": f("adapters", lambda: brk("customUser:adapter", days, limit=8)),
+            "extAdapter": f("ext adapter", lambda: brk("customUser:has_ext_adapter", days, limit=3)),
+            "skins": f("skins", lambda: brk("customUser:skin", days, limit=10)),
+            "darkMap": f("dark map", lambda: brk("customUser:dark_map", days, limit=3)),
+            "uploadTargets": f("upload targets", lambda: brk("customUser:upload_targets", days, limit=8)),
+            "alertsOff": f("alerts off", lambda: brk("customUser:alerts_off", days, limit=12)),
+            # event params → event counts
+            "notable": f("notable", lambda: brk("customEvent:category", days, "notable_spotted", 12)),
+            "aircraft": f("aircraft", lambda: brk("customEvent:category", days, "notable_aircraft", 6)),
+            "drones": f("drones", lambda: brk("customEvent:ua_type", days, "drone_detected", 8)),
+            "tools": f("tools", lambda: brk("customEvent:tool", days, "tool_opened", 10)),
+            "secrets": f("secrets", lambda: brk("customEvent:kind", days, "secret_unlock", 8)),
+            "exportFormats": f("export formats", lambda: brk("customEvent:format", days, "export", 4)),
+            "captureKinds": f("capture kinds", lambda: brk("customEvent:kind", days, "capture", 4)),
+            # the app sends sdr_connected{source}; fall back to a `kind` param if that ever changes
+            "sdr": f("sdr", lambda: brk("customEvent:source", days, "sdr_connected", 6)
+                     or brk("customEvent:kind", days, "sdr_connected", 6)),
+            "uploadsBy": f("uploads by", lambda: brk("customEvent:target", days, "upload", 4)),
+            "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", days, "notif_toggle", 10)),
+            "chat": safe(f"{label} fun chat", chat, {}),
+        }
 
     def range_block(days, label):
         def totals():
@@ -181,6 +252,7 @@ def run():
             "weekdays": safe(f"{label} weekdays", weekdays, []),
             "screens": safe(f"{label} screens", lambda: lst("unifiedScreenName", "name", days, 8, "screenPageViews", "views"), []),
             "timeseries": safe(f"{label} ts", timeseries, []),
+            "fun": safe(f"{label} fun", lambda: fun_block(days, label), {}),
         }
 
     # ---- realtime (last 30 min) ----

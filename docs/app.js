@@ -35,10 +35,10 @@ const CENTROIDS = {
 };
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 // Activity is wildly skewed — one huge country (US) and a long tail — so LINEAR u/max pins almost every country to
-// the bottom of the ramp (they all come out the same colour). A LOG map spreads that tail across the whole ramp so
+// the bottom of the ramp (they all come out the same color). A LOG map spreads that tail across the whole ramp so
 // the variation is actually visible. Returns 0..1.
 const heatFrac = (u, max) => max > 1 ? Math.log1p(Math.max(0, u)) / Math.log1p(max) : 0;
-// AURORA TEAL — ONE hue family (deep teal → brand accent → bright mint), so no country is an odd colour out: the US
+// AURORA TEAL — ONE hue family (deep teal → brand accent → bright mint), so no country is an odd color out: the US
 // is just the brightest teal, never a clashing gold. Lightness rides the log-spread magnitude; the numbers carry the
 // exact value. Matches the rest of the dashboard (accent #19e0b4).
 const AURORA = [[10, 70, 60], [25, 224, 180], [150, 255, 214]];
@@ -143,6 +143,112 @@ function renderRange() {
   list($('devices'), r.devices, 'model', 'users');
   list($('android'), r.android, 'os', 'users');
   list($('languages'), r.languages, 'language', 'users');
+  renderFun(r.fun || {}, r.events || []);
+}
+
+// ---- Fun data: breakdowns by the app's CUSTOM dimensions (user properties + event params) ----
+// Custom dimensions aren't retroactive, so every card has a friendly "collecting" state until values arrive.
+const COLLECTING = 'Collecting — new data starts flowing soon';
+const FUN_COLORS = [ACCENT, 'rgba(22,192,255,.75)', '#ffcf4a', '#ff4d6d', 'rgba(25,224,180,.42)',
+  'rgba(22,192,255,.38)', MUTED, 'rgba(255,207,74,.5)', 'rgba(255,77,109,.5)', '#2a3f45'];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const titleEnum = (s) => String(s || '').toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const NOTABLE_NAMES = {
+  SURVEILLANCE: 'Flock & surveillance cams', TRACKER: 'Trackers', FORENSIC: 'Forensic / IMSI catchers',
+  CCTV: 'CCTV cameras', FLEET: 'Fleet & vehicles', TRAFFIC: 'ALPR cameras', BODYCAM: 'Body cams',
+  DRONE: 'Drones', RFTOOL: 'RF attack tools', HACKTOOL: 'Hacking gadgets', FLIPPER: 'Flipper Zeros',
+  GLASSES: 'Smart glasses', ACTIONCAM: 'Action cams', POLICE: 'Two-way radios', POLICERADAR: 'Police radar',
+  LIGHTBAR: 'Emergency light bars', GUNSHOT: 'Gunshot sensors', MEDICAL: 'Medical / EMS gear',
+  RETAIL: 'Retail tracking beacons', SPYCAM: 'Hidden spy cams', ADULTTOY: 'Adult toys', MESH: 'Mesh radios',
+  RAIL: 'Train Wi-Fi', HEALTH: 'Health devices', HOMECAM: 'Home cams', KARR: 'KARR immobilizers',
+  USERFLAG: 'Flagged by users'
+};
+const AIRCRAFT_NAMES = { EMERGENCY: 'Emergency squawks', SPECIAL: 'Special (VIP, blimps, display teams)',
+  MILITARY: 'Military', POLICE: 'Police / government', MEDEVAC: 'Medevac' };
+// Alert-switch ids (Settings › Notable alerts): a notable category name, or one of these, or AIRCRAFT_<class>.
+const NOTIF_NAMES = Object.assign({}, NOTABLE_NAMES, { FINDMY_APPLE: 'Apple Find My', FINDMY_GOOGLE: 'Google Find My',
+  REMOTEID_DRONE: 'Remote ID drones' });
+const SKIN_NAMES = { TPP: "The Pirates' Plunder", WIGLE: 'WiGLE', WDGWARS: 'WDGWars', BBS: 'BBS', PRO: 'PRO',
+  PACMAN: 'Pac-Man', SONAR_BLUE: 'Sonar Blue' };
+const TARGET_NAMES = { wigle: 'WiGLE', wdgw: 'WDGWars', wardrift: 'Wardrift' };
+const SECRET_NAMES = { theme: 'Secret themes', admin: 'Admin console', wpasec: 'WPA-SEC mode', peen: 'PEEN mode',
+  boobs: 'BOOBS', chat: 'Chatroom' };
+const lookup = (map) => (v) => map[v] || map[String(v).toUpperCase()] || map[String(v).toLowerCase()] || titleEnum(v);
+const FUN_LABEL = {
+  notable: lookup(NOTABLE_NAMES), aircraft: lookup(AIRCRAFT_NAMES), skin: lookup(SKIN_NAMES), secret: lookup(SECRET_NAMES),
+  target: lookup(TARGET_NAMES),
+  notif: (v) => /^AIRCRAFT_/i.test(v) ? 'Aircraft · ' + lookup(AIRCRAFT_NAMES)(String(v).slice(9)) : lookup(NOTIF_NAMES)(v),
+  targets: (v) => v === 'none' ? 'None (no uploads)' : String(v).split('+').map(lookup(TARGET_NAMES)).join(' + '),
+  ext: (v) => v === 'true' ? 'External adapter' : v === 'false' ? 'Phone radio only' : v,
+  dark: (v) => v === 'on' ? 'Dark map' : v === 'off' ? 'Light map' : v,
+  capture: (v) => ({ handshake: '4-way handshakes', pmkid: 'PMKIDs' }[v] || titleEnum(v)),
+  format: (v) => ({ CSV: 'CSV', GZIP: 'CSV.gz', ZIP: 'ZIP' }[v] || v),
+  alerts: (v) => v === '0' ? 'None — all alerts on' : v === '5' ? '5 (app default)' : `${v} switch${v === '1' ? '' : 'es'} off`,
+  adapter: (v) => v === 'phone' ? 'Phone (built-in Wi-Fi)' : v,   // adapter labels shown as-is
+  // tool / SDR / drone labels arrive human-readable; only SHOUTY_SNAKE enum values get title-cased
+  plain: (v) => v === 'unknown' ? 'Unknown' : (/_/.test(v) && /^[A-Z0-9_]+$/.test(v) ? titleEnum(v) : v)
+};
+
+function funList(id, rows, countKey, labelFn, unit) {
+  const el = $(id); if (!el) return;
+  if (!rows || !rows.length) { el.innerHTML = `<div class="collecting">${COLLECTING}</div>`; return; }
+  list(el, rows.map(r => ({ name: esc(labelFn ? labelFn(r.name) : r.name), n: r[countKey] })), 'name', 'n', unit);
+}
+function funDonut(id, rows, countKey, labelFn) {
+  const c = $(id); if (!c) return;
+  const box = c.parentElement, empty = box.nextElementSibling;
+  if (!rows || !rows.length) {
+    CHARTS[id]?.destroy(); delete CHARTS[id];
+    box.style.display = 'none'; if (empty) { empty.style.display = ''; empty.textContent = COLLECTING; }
+    return;
+  }
+  box.style.display = ''; if (empty) empty.style.display = 'none';
+  mkChart(id, { type: 'doughnut',
+    data: { labels: rows.map(r => labelFn ? labelFn(r.name) : r.name), datasets: [{ data: rows.map(r => r[countKey] || 0),
+      backgroundColor: rows.map((_, i) => FUN_COLORS[i % FUN_COLORS.length]), borderColor: '#0e1619', borderWidth: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } } });
+}
+function renderFun(f, events) {
+  const ev = {}; events.forEach(e => { ev[e.name] = e.count; });
+  $('funCards').innerHTML = [
+    card('Notable devices', fmt(ev.notable_spotted || 0), 'spotted', true),
+    card('Handshakes', fmt(ev.capture || 0), 'captured'),
+    card('Passwords', fmt(ev.capture_cracked || 0), 'cracked'),
+    card('Drones', fmt(ev.drone_detected || 0), 'Remote ID'),
+    card('Aircraft', fmt(ev.notable_aircraft || 0), 'notable, flagged'),
+    card('Secret unlocks', fmt(ev.secret_unlock || 0), 'codes punched')
+  ].join('');
+  funList('funAdapters', f.adapters, 'users', FUN_LABEL.adapter);
+  funDonut('funExtChart', f.extAdapter, 'users', FUN_LABEL.ext);
+  funList('funNotable', f.notable, 'count', FUN_LABEL.notable);
+  funDonut('funAircraftChart', f.aircraft, 'count', FUN_LABEL.aircraft);
+  funList('funTools', f.tools, 'count', FUN_LABEL.plain);
+  funList('funSkins', f.skins, 'users', FUN_LABEL.skin);
+  funList('funDrones', f.drones, 'count', FUN_LABEL.plain);
+  funDonut('funCaptureChart', f.captureKinds, 'count', FUN_LABEL.capture);
+  funList('funTargets', f.uploadTargets, 'users', FUN_LABEL.targets);
+  funDonut('funUploadsChart', f.uploadsBy, 'count', FUN_LABEL.target);
+  funDonut('funDarkChart', f.darkMap, 'users', FUN_LABEL.dark);
+  funDonut('funExportChart', f.exportFormats, 'count', FUN_LABEL.format);
+  funList('funNotif', f.notifToggles, 'count', FUN_LABEL.notif);
+  funList('funAlertsOff', (f.alertsOff || []).slice().sort((a, b) => (parseInt(a.name, 10) || 0) - (parseInt(b.name, 10) || 0)), 'users', FUN_LABEL.alerts);
+  funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
+  funList('funSdr', f.sdr, 'count', FUN_LABEL.plain);
+  renderChat(f.chat || {});
+}
+function renderChat(ch) {
+  const el = $('funChat'); if (!el) return;
+  const kinds = ch.byKind || [], replies = ch.replies || [], views = ch.statsViews || [];
+  if (!ch.openedUsers && !ch.sent && !kinds.length) { el.innerHTML = `<div class="collecting">${COLLECTING}</div>`; return; }
+  const rTrue = (replies.find(r => r.name === 'true') || {}).count || 0;
+  const rAll = replies.reduce((s, r) => s + (r.count || 0), 0);
+  const mini = (k, v) => `<div class="mini"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  el.innerHTML = `<div class="chat-stats">${[
+    mini('Dropped in', fmt(ch.openedUsers || 0)), mini('Chatters', fmt(ch.senders || 0)),
+    mini('Messages', fmt(ch.sent || 0)), mini('Replies', rAll ? Math.round(rTrue / rAll * 100) + '%' : '—'),
+    ...views.map(v => mini(`${esc(lookup(TARGET_NAMES)(v.name))} views`, fmt(v.count)))
+  ].join('')}</div><div class="list" id="funChatKinds"></div>`;
+  if (kinds.length) funList('funChatKinds', kinds, 'count', (v) => titleEnum(v));
 }
 
 // ---- charts (destroy-before-recreate so range switches + polls don't leak or collide) ----
@@ -254,7 +360,7 @@ function drawGlobe(countries) {
       .labelColor(() => 'rgba(120,224,255,0.92)').labelDotRadius(dotRadiusFn).labelResolution(2).labelAltitude(0.015)
       .labelLabel(d => `<div style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8f6f2"><b style="color:#19e0b4">${d.country}</b><br>${fmt(d.users)} active users</div>`);
     // RADAR RINGS — teal rings pulse outward from each active country (on-theme: signals rippling across the map).
-    // Accessors set once, data fed per-draw. The colour interpolator fades the ring as it expands; busier countries
+    // Accessors set once, data fed per-draw. The color interpolator fades the ring as it expands; busier countries
     // (higher d.f) pulse faster and wider, so hot spots visibly throb.
     GLOBE.ringColor(() => (t) => `rgba(32,240,196,${((1 - t) * 0.55).toFixed(3)})`)
       .ringMaxRadius(d => 3 + d.f * 6).ringPropagationSpeed(1.7)

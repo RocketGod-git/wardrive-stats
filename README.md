@@ -54,8 +54,14 @@ cd docs && python -m http.server 8000   # then open http://localhost:8000
 ```
 The page renders whatever is in `docs/data/stats.json` (the committed sample until the job runs for real).
 
-## Making the stats richer
-`scripts/fetch_stats.py` queries only standard GA4 dimensions. To chart **custom event parameters** (e.g.
-`notable_spotted.category`, `upload.target`), register them as **custom dimensions** in GA Admin → *Custom
-definitions*, then add a report for them in the script (the code already isolates each report so a missing
-dimension can't break the file).
+## Fun data (custom dimensions)
+The "Fun data" cards (adapters, themes, notable categories, tools, captures, chat, …) read the app's **custom
+event parameters + user properties**, which GA4 only reports once they're registered as custom dimensions — and
+registration is **not retroactive** (cards say "Collecting" until data flows).
+
+Register them once: *Actions → "Register GA4 custom dimensions" → Run workflow* (tick *Dry run* first to preview).
+It reuses `GA4_SA` / `GA4_PROPERTY_ID`, is idempotent (skips what exists), and needs the service account to be
+**Editor** on the GA4 property plus the **Google Analytics Admin API** enabled in its Cloud project — if not, the
+log/job summary says what to fix and lists every dimension so you can create them by hand in GA Admin →
+*Custom definitions*. The list lives in `scripts/register_dims.py`; `scripts/fetch_stats.py` skips any that
+aren't registered.
