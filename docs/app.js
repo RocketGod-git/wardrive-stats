@@ -257,13 +257,18 @@ function funDonut(id, rows, countKey, labelFn) {
 }
 function renderFun(f, events) {
   const k = f.counts || {};
-  const since = f.since ? new Date(f.since + 'T12:00:00') : null;
+  // Headline counts cover the selected range; the per-type breakdowns only exist from the day their fields were
+  // registered, so say so when the range starts earlier.
   const sinceEl = $('funSince');
-  if (sinceEl) sinceEl.textContent = since && !isNaN(since)
-    ? 'since ' + since.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  if (sinceEl) {
+    const since = f.since ? new Date(f.since + 'T12:00:00') : null;
+    const clipped = f.since && f.rangeStart && f.since > f.rangeStart;
+    sinceEl.textContent = clipped && !isNaN(since)
+      ? '· breakdowns since ' + since.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  }
   $('funCards').innerHTML = [
     card('Notable devices', fmt(k.notable || 0), 'spotted', true),
-    card('Handshakes', fmt(k.handshakes || 0), `${fmt(k.pmkids || 0)} PMKIDs`),
+    card('Captures', fmt(k.captures || 0), 'handshakes + PMKIDs'),
     card('Passwords', fmt(k.cracked || 0), 'cracked'),
     card('Drones', fmt(k.drones || 0), 'Remote ID'),
     card('Aircraft', fmt(k.aircraft || 0), 'notable, flagged'),
@@ -321,10 +326,10 @@ function drawTimeseries(tsIn) {
       scales: { x: baseAxis(), y: baseAxis({ position: 'left' }), y1: baseAxis({ position: 'right', grid: { drawOnChartArea: false, color: GRID } }) } } });
 }
 // The EVENTS chart shows what people do in the app. Left out: GA4's own bookkeeping (engagement pings, session and
-// screen views, OS/app updates, cleared data, crashes), the app's version heartbeat, and the capture / crack / upload
-// events whose older app versions counted repeats or nothing at all (their accurate counts are in Fun data).
+// screen views, OS/app updates, cleared data, crashes), the app's version heartbeat, and uploads (only counted
+// from app 3.1.173, so a range total would be wrong).
 const EVENT_HIDE = new Set(['user_engagement', 'session_start', 'screen_view', 'app_version_active', 'os_update',
-  'app_update', 'app_clear_data', 'app_exception', 'language_set', 'capture', 'capture_cracked', 'upload']);
+  'app_update', 'app_clear_data', 'app_exception', 'language_set', 'upload']);
 function drawEvents(evs) {
   const top = evs.filter(e => !EVENT_HIDE.has(e.name)).slice(0, 12);
   mkChart('evChart', { type: 'bar',

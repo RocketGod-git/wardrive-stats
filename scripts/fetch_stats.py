@@ -27,13 +27,9 @@ from google.analytics.data_v1beta.types import (
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "stats.json")
 RANGES = [(1, "24 hours"), (7, "7 days"), (28, "28 days"), (90, "90 days")]
-# The app's custom dimensions were registered on this day; GA4 has no breakdown data before it, so every "Fun data"
-# figure is measured from here (or the range start, if later) — the whole section shares one honest window.
+# The app's custom dimensions were registered on this day; GA4 has no per-type breakdown data before it. Headline
+# counts use the plain event totals, which cover the whole selected range.
 FUN_SINCE = date(2026, 10, 18)
-# Captures count once per new capture from 3.1.173, and cracked passwords once per network from 3.1.177; earlier
-# versions repeated them, so those counts only use events from these versions on.
-CAPTURE_VERSIONS = r"^(3\.1\.(17[3-9]|1[89][0-9]|[2-9][0-9]{2})|3\.([2-9]|[1-9][0-9])\.|([4-9]|[1-9][0-9])\.)"
-CRACKED_VERSIONS = r"^(3\.1\.(17[7-9]|1[89][0-9]|[2-9][0-9]{2})|3\.([2-9]|[1-9][0-9])\.|([4-9]|[1-9][0-9])\.)"
 
 
 def client():
@@ -149,10 +145,10 @@ def run():
         def f(key, fn):
             return safe(f"{label} fun {key}", fn, [])
 
-        def n(key, event, versions=None):
-            return safe(f"{label} fun count {key}", lambda: ev_metric(event, "eventCount", since, versions), 0)
+        range_start = days_start.isoformat()
 
-        caps = safe(f"{label} fun capture kinds", lambda: brk("customEvent:kind", since, "capture", 4, versions=CAPTURE_VERSIONS), [])
+        def n(key, event):
+            return safe(f"{label} fun count {key}", lambda: ev_metric(event, "eventCount", range_start), 0)
 
         def chat():
             return {
@@ -165,13 +161,12 @@ def run():
             }
 
         return {
-            "since": since,
-            # headline counts over the same window as every breakdown below
+            "since": since,              # breakdowns start here (custom dimensions)
+            "rangeStart": range_start,   # headline counts cover the whole selected range
             "counts": {
                 "notable": n("notable", "notable_spotted"),
-                "handshakes": next((r["count"] for r in caps if r["name"] == "handshake"), 0),
-                "pmkids": next((r["count"] for r in caps if r["name"] == "pmkid"), 0),
-                "cracked": n("cracked", "capture_cracked", CRACKED_VERSIONS),
+                "captures": n("captures", "capture"),
+                "cracked": n("cracked", "capture_cracked"),
                 "drones": n("drones", "drone_detected"),
                 "aircraft": n("aircraft", "notable_aircraft"),
                 "secrets": n("secrets", "secret_unlock"),
@@ -189,7 +184,7 @@ def run():
             "tools": f("tools", lambda: brk("customEvent:tool", since, "tool_opened", 40)),
             "secrets": f("secrets", lambda: brk("customEvent:kind", since, "secret_unlock", 10)),
             "exportFormats": f("export formats", lambda: brk("customEvent:format", since, "export", 4)),
-            "captureKinds": caps,
+            "captureKinds": f("capture kinds", lambda: brk("customEvent:kind", since, "capture", 4)),
             "sdr": f("sdr", lambda: brk("customEvent:source", since, "sdr_connected", 10, users=True)),
             "uploadsBy": f("uploads by", lambda: brk("customEvent:target", since, "upload", 4)),
             "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", since, "notif_toggle", 20)),
