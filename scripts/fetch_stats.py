@@ -270,7 +270,9 @@ def run():
                     if d in base: base[d][key] = int(float(x.metric_values[0].value))
             safe("ts notable", lambda: overlay("notable_spotted", "notable"), None)
             safe("ts captures", lambda: overlay("capture", "captures"), None)
-            out = sorted(base.values(), key=lambda z: z["date"])
+            # Today is still in progress (and GA4 is still processing it), so its point always dips — chart full days only.
+            today = datetime.now(timezone.utc).strftime("%Y%m%d")
+            out = sorted((z for z in base.values() if z["date"] != today), key=lambda z: z["date"])
             for z in out:
                 if len(z["date"]) == 8:
                     z["date"] = f'{z["date"][:4]}-{z["date"][4:6]}-{z["date"][6:]}'
@@ -293,27 +295,6 @@ def run():
             "timeseries": safe(f"{label} ts", timeseries, []),
             "fun": safe(f"{label} fun", lambda: fun_block(days, label), {}),
         }
-
-    # ---- one-off diagnostic: user-property coverage vs users on new app versions ----
-    def prop_check():
-        start = FUN_SINCE.isoformat()
-        r = report(["appVersion"], ["activeUsers"], 0, limit=40, order_metric="activeUsers", start=start)
-        print("prop check users by version since %s: " % start + ", ".join(
-            f"{x.dimension_values[0].value}={x.metric_values[0].value}" for x in rows(r)))
-        r = report(["appVersion", "customUser:skin"], ["activeUsers"], 0, limit=60, order_metric="activeUsers", start=start)
-        print("prop check skin by version: " + ", ".join(
-            f"{x.dimension_values[0].value}/{x.dimension_values[1].value}={x.metric_values[0].value}" for x in rows(r)))
-        r = report(["appVersion", "deviceModel"], ["activeUsers"], 0, limit=60, order_metric="activeUsers", start=start,
-                   dim_filter=FilterExpression(filter=Filter(field_name="appVersion", string_filter=Filter.StringFilter(
-                       value=r"^3\.1\.(16[89]|17[0-9])", match_type=Filter.StringFilter.MatchType.PARTIAL_REGEXP))))
-        print("prop check new-version devices: " + ", ".join(
-            f"{x.dimension_values[0].value}/{x.dimension_values[1].value}={x.metric_values[0].value}" for x in rows(r)))
-        r = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="deviceModel")], metrics=[Metric(name="activeUsers")],
-            date_ranges=[DateRange(start_date=start, end_date="today")], limit=10,
-            dimension_filter=FilterExpression(filter=Filter(field_name="deviceModel", in_list_filter=Filter.InListFilter(values=BOT_DEVICE_MODELS)))))
-        print("prop check excluded models since Oct 18: " + ", ".join(
-            f"{x.dimension_values[0].value}={x.metric_values[0].value}" for x in rows(r)))
-    safe("prop check", prop_check, None)
 
     # ---- realtime (last 30 min) ----
     def realtime():
