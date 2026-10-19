@@ -236,6 +236,12 @@ function screenRows(rows) {
     .map(r => Object.assign({}, r, { name: String(r.name).replace(/([a-z])([A-Z])/g, '$1 $2') }));
 }
 
+// Settings the app reports from 3.1.168 on: say how many users that covers, so a small total reads right.
+function coverage(id, rows) {
+  const el = $(id); if (!el) return;
+  const n = (rows || []).reduce((s, r) => s + (r.users || 0), 0);
+  el.textContent = n ? `${fmt(n)} user${n === 1 ? '' : 's'} on app 3.1.168+ report this` : '';
+}
 function funList(id, rows, countKey, labelFn, unit) {
   const el = $(id); if (!el) return;
   if (!rows || !rows.length) { el.innerHTML = `<div class="collecting">${COLLECTING}</div>`; return; }
@@ -280,16 +286,16 @@ function renderFun(f, events) {
   funList('funNotable', f.notable, 'count', FUN_LABEL.notable);
   funDonut('funAircraftChart', f.aircraft, 'count', FUN_LABEL.aircraft);
   funList('funTools', f.tools, 'count', FUN_LABEL.plain);
-  funList('funSkins', f.skins, 'users', FUN_LABEL.skin);
+  funList('funSkins', f.skins, 'users', FUN_LABEL.skin); coverage('covSkins', f.skins);
   funList('funDrones', f.drones, 'count', FUN_LABEL.plain);
   funDonut('funCaptureChart', f.captureKinds, 'count', FUN_LABEL.capture);
   funDonut('funCaptureNewChart', f.captureNew, 'count', (v) => v === 'yes' ? 'New to that phone' : v === 'no' ? 'Seen again' : v);
-  funList('funTargets', f.uploadTargets, 'users', FUN_LABEL.targets);
+  funList('funTargets', f.uploadTargets, 'users', FUN_LABEL.targets); coverage('covTargets', f.uploadTargets);
   funDonut('funUploadsChart', f.uploadsBy, 'count', FUN_LABEL.target);
-  funDonut('funDarkChart', f.darkMap, 'users', FUN_LABEL.dark);
+  funDonut('funDarkChart', f.darkMap, 'users', FUN_LABEL.dark); coverage('covDark', f.darkMap);
   funDonut('funExportChart', f.exportFormats, 'count', FUN_LABEL.format);
   funList('funNotif', f.notifToggles, 'count', FUN_LABEL.notif);
-  funList('funAlertsOff', (f.alertsOff || []).slice().sort((a, b) => (parseInt(a.name, 10) || 0) - (parseInt(b.name, 10) || 0)), 'users', FUN_LABEL.alerts);
+  funList('funAlertsOff', (f.alertsOff || []).slice().sort((a, b) => (parseInt(a.name, 10) || 0) - (parseInt(b.name, 10) || 0)), 'users', FUN_LABEL.alerts); coverage('covAlerts', f.alertsOff);
   funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
   funList('funSdr', f.sdr, f.sdr && f.sdr[0] && f.sdr[0].count != null ? 'count' : 'users', FUN_LABEL.sdr);
   renderChat(f.chat || {});

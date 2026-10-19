@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
   // "Get it on Google Play" button is pointless — they already have the app. Website visitors never carry either.
@@ -135,7 +135,7 @@
   </section>
   <section class="two">
     <div class="panel"><h2>Most-used tools</h2><div class="list" id="funTools"></div></div>
-    <div class="panel"><h2>Favorite themes</h2><div class="list" id="funSkins"></div></div>
+    <div class="panel"><h2>Favorite themes</h2><div class="cover" id="covSkins"></div><div class="list" id="funSkins"></div></div>
   </section>
   <section class="two">
     <div class="panel"><h2>Remote ID drones by type</h2><div class="list" id="funDrones"></div></div>
@@ -143,16 +143,16 @@
     <div class="panel"><h2>Captures · new vs seen again</h2><div class="chartbox"><canvas id="funCaptureNewChart"></canvas></div><div class="collecting" style="display:none"></div></div>
   </section>
   <section class="two">
-    <div class="panel"><h2>Upload targets enabled</h2><div class="list" id="funTargets"></div></div>
+    <div class="panel"><h2>Upload targets enabled</h2><div class="cover" id="covTargets"></div><div class="list" id="funTargets"></div></div>
     <div class="panel"><h2>Uploads by service</h2><div class="chartbox"><canvas id="funUploadsChart"></canvas></div><div class="collecting" style="display:none"></div></div>
   </section>
   <section class="two">
-    <div class="panel"><h2>Dark map vs light map</h2><div class="chartbox"><canvas id="funDarkChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+    <div class="panel"><h2>Dark map vs light map</h2><div class="cover" id="covDark"></div><div class="chartbox"><canvas id="funDarkChart"></canvas></div><div class="collecting" style="display:none"></div></div>
     <div class="panel"><h2>Export formats</h2><div class="chartbox"><canvas id="funExportChart"></canvas></div><div class="collecting" style="display:none"></div></div>
   </section>
   <section class="two">
     <div class="panel"><h2>Most-toggled alert categories</h2><div class="list" id="funNotif"></div></div>
-    <div class="panel"><h2>Alert switches turned off</h2><div class="list" id="funAlertsOff"></div></div>
+    <div class="panel"><h2>Alert switches turned off</h2><div class="cover" id="covAlerts"></div><div class="list" id="funAlertsOff"></div></div>
   </section>
   <section class="two">
     <div class="panel"><h2>Secret unlocks</h2><div class="list" id="funSecrets"></div></div>
@@ -196,6 +196,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=27"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>
