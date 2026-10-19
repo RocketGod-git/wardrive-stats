@@ -100,7 +100,7 @@ canvas{max-width:100%}
 
 .list .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
 .list .row:first-child{border-top:0}
-.list .row .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .list .row .ct{font-weight:700;color:var(--accent)}
 .list .row .track{width:84px;height:5px;border-radius:5px;background:var(--panel2);overflow:hidden}
 .list .row .fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent))}

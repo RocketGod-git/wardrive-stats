@@ -136,7 +136,7 @@ function renderRange() {
   drawEvents(r.events || []);
   if ((r.timeseries || []).length) { show('tsPanel'); drawTimeseries(r.timeseries); } else hide('tsPanel');
   drawHours(r.hours || []); drawDow(r.weekdays || []); drawNewReturning(r.newReturning || {});
-  list($('screens'), r.screens, 'name', 'views');
+  list($('screens'), screenRows(r.screens), 'name', 'views');
   list($('versions'), r.versions, 'version', 'users');
   list($('countries'), r.countries, 'country', 'users');
   list($('cities'), r.cities, 'city', 'users');
@@ -179,15 +179,51 @@ const FUN_LABEL = {
   target: lookup(TARGET_NAMES),
   notif: (v) => /^AIRCRAFT_/i.test(v) ? 'Aircraft · ' + lookup(AIRCRAFT_NAMES)(String(v).slice(9)) : lookup(NOTIF_NAMES)(v),
   targets: (v) => v === 'none' ? 'None (no uploads)' : String(v).split('+').map(lookup(TARGET_NAMES)).join(' + '),
-  ext: (v) => v === 'true' ? 'External adapter' : v === 'false' ? 'Phone radio only' : v,
+  ext: (v) => (v === 'true' || v === 'yes') ? 'External adapter' : (v === 'false' || v === 'no') ? 'Phone radio only' : v,
   dark: (v) => v === 'on' ? 'Dark map' : v === 'off' ? 'Light map' : v,
   capture: (v) => ({ handshake: '4-way handshakes', pmkid: 'PMKIDs' }[v] || titleEnum(v)),
   format: (v) => ({ CSV: 'CSV', GZIP: 'CSV.gz', ZIP: 'ZIP' }[v] || v),
   alerts: (v) => v === '0' ? 'None — all alerts on' : v === '5' ? '5 (app default)' : `${v} switch${v === '1' ? '' : 'es'} off`,
-  adapter: (v) => v === 'phone' ? 'Phone (built-in Wi-Fi)' : v,   // adapter labels shown as-is
+  adapter: (v) => v === 'phone' ? 'Phone only (no adapter)' : v,
   // tool / SDR / drone labels arrive human-readable; only SHOUTY_SNAKE enum values get title-cased
   plain: (v) => v === 'unknown' ? 'Unknown' : (/_/.test(v) && /^[A-Z0-9_]+$/.test(v) ? titleEnum(v) : v)
 };
+
+// Older app versions reported the adapter as a log line ("adapter: none (last engaged: Realtek …", driver names, USB ids)
+// cut at 36 characters. Reduce every value to the chip itself and merge the duplicates; "phone" = no external adapter.
+function adapterName(v) {
+  let s = String(v || '').replace(/^adapter:\s*/i, '').replace(/\uFFFD/g, '·').trim();
+  if (/^none/i.test(s)) {
+    const m = s.match(/last engaged:\s*(.*)$/i);
+    if (!m) return 'phone';
+    s = m[1];
+  }
+  s = s.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)?/ig, '').replace(/\($/, '').trim();
+  const parts = s.split('·').map(x => x.trim()).filter(Boolean);
+  if (!parts.length) return 'phone';
+  if (/^usb ser/i.test(parts[0])) return parts[1] ? parts[1].replace(/\(.*$/, '').trim() || 'ESP32 serial' : 'ESP32 serial';
+  // cut-off values that kept only the vendor: Atheros = the AR9271 (the only Atheros chip supported)
+  if (/^atheros$/i.test(parts[0])) return 'Atheros AR9271';
+  if (/^(realtek|mediatek|ralink)$/i.test(parts[0])) return parts[0] + ' (model not reported)';
+  return parts[0];
+}
+function adapterRows(rows) {
+  const by = {};
+  (rows || []).forEach(r => { const n = adapterName(r.name); by[n] = (by[n] || 0) + (r.users || 0); });
+  return Object.entries(by).map(([name, users]) => ({ name, users })).sort((a, b) => b.users - a.users);
+}
+// External adapter vs phone, from the adapter breakdown (the old has_ext_adapter value only said whether an adapter was
+// receiving at that moment, so it read "phone only" for nearly everyone).
+function extRows(adapters) {
+  let phone = 0, ext = 0;
+  adapters.forEach(r => { if (r.name === 'phone') phone += r.users; else ext += r.users; });
+  return [{ name: 'true', users: ext }, { name: 'false', users: phone }].filter(r => r.users > 0);
+}
+// Screen names: the app names its screens from 3.1.173; older versions report none, so drop those rows.
+function screenRows(rows) {
+  return (rows || []).filter(r => r.name && r.name !== 'Unknown' && r.name !== '(not set)')
+    .map(r => Object.assign({}, r, { name: String(r.name).replace(/([a-z])([A-Z])/g, '$1 $2') }));
+}
 
 function funList(id, rows, countKey, labelFn, unit) {
   const el = $(id); if (!el) return;
@@ -218,8 +254,9 @@ function renderFun(f, events) {
     card('Aircraft', fmt(ev.notable_aircraft || 0), 'notable, flagged'),
     card('Secret unlocks', fmt(ev.secret_unlock || 0), 'codes punched')
   ].join('');
-  funList('funAdapters', f.adapters, 'users', FUN_LABEL.adapter);
-  funDonut('funExtChart', f.extAdapter, 'users', FUN_LABEL.ext);
+  const adapters = adapterRows(f.adapters);
+  funList('funAdapters', adapters, 'users', FUN_LABEL.adapter);
+  funDonut('funExtChart', extRows(adapters), 'users', FUN_LABEL.ext);
   funList('funNotable', f.notable, 'count', FUN_LABEL.notable);
   funDonut('funAircraftChart', f.aircraft, 'count', FUN_LABEL.aircraft);
   funList('funTools', f.tools, 'count', FUN_LABEL.plain);
