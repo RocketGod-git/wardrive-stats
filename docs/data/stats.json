@@ -1,99 +1,80 @@
 {
-  "generatedAt": "2026-10-19T01:11:58Z",
+  "generatedAt": "2026-10-19T01:49:55Z",
   "realtime": {
-    "activeUsers": 39,
+    "activeUsers": 41,
     "events": [
       {
+        "name": "capture",
+        "count": 293
+      },
+      {
         "name": "notable_spotted",
+        "count": 158
+      },
+      {
+        "name": "user_engagement",
         "count": 146
       },
       {
         "name": "tool_opened",
-        "count": 142
-      },
-      {
-        "name": "user_engagement",
-        "count": 110
-      },
-      {
-        "name": "session_start",
-        "count": 36
+        "count": 145
       },
       {
         "name": "screen_view",
-        "count": 34
+        "count": 33
+      },
+      {
+        "name": "session_start",
+        "count": 28
       },
       {
         "name": "app_version_active",
-        "count": 14
+        "count": 9
+      },
+      {
+        "name": "notable_aircraft",
+        "count": 9
       },
       {
         "name": "sdr_connected",
-        "count": 5
+        "count": 7
       },
       {
-        "name": "capture",
-        "count": 3
+        "name": "drone_detected",
+        "count": 6
       },
       {
-        "name": "export",
+        "name": "cluster_linked",
+        "count": 4
+      },
+      {
+        "name": "secret_unlock",
         "count": 3
       },
       {
         "name": "first_open",
-        "count": 3
-      },
-      {
-        "name": "notable_aircraft",
         "count": 2
-      },
-      {
-        "name": "secret_unlock",
-        "count": 2
-      },
-      {
-        "name": "app_remove",
-        "count": 1
-      },
-      {
-        "name": "cluster_linked",
-        "count": 1
       }
     ],
     "countries": [
       {
         "country": "United States",
         "code": "US",
-        "users": 26
+        "users": 31
       },
       {
         "country": "Australia",
         "code": "AU",
-        "users": 4
+        "users": 3
       },
       {
         "country": "Canada",
         "code": "CA",
-        "users": 2
+        "users": 3
       },
       {
-        "country": "Argentina",
-        "code": "AR",
-        "users": 1
-      },
-      {
-        "country": "Cambodia",
-        "code": "KH",
-        "users": 1
-      },
-      {
-        "country": "Dominican Republic",
-        "code": "DO",
-        "users": 1
-      },
-      {
-        "country": "Finland",
-        "code": "FI",
+        "country": "Germany",
+        "code": "DE",
         "users": 1
       },
       {
@@ -102,13 +83,13 @@
         "users": 1
       },
       {
-        "country": "Philippines",
-        "code": "PH",
+        "country": "New Zealand",
+        "code": "NZ",
         "users": 1
       },
       {
-        "country": "United Kingdom",
-        "code": "GB",
+        "country": "Russia",
+        "code": "RU",
         "users": 1
       }
     ]
@@ -117,43 +98,43 @@
     "1d": {
       "label": "24 hours",
       "totals": {
-        "active": 602,
-        "events": 28933,
-        "sessions": 1561,
+        "active": 605,
+        "events": 29358,
+        "sessions": 1576,
         "newUsers": 140,
-        "engagementMinutes": 16902,
-        "avgEngagementSec": 1685,
-        "eventsPerSession": 18.5,
+        "engagementMinutes": 17067,
+        "avgEngagementSec": 1693,
+        "eventsPerSession": 18.6,
         "engagementRate": 85
       },
       "newReturning": {
         "new": 163,
-        "returning": 480
+        "returning": 484
       },
       "events": [
         {
           "name": "notable_spotted",
-          "count": 9359
+          "count": 9398
         },
         {
           "name": "capture",
-          "count": 6166
+          "count": 6174
         },
         {
           "name": "user_engagement",
-          "count": 5553
+          "count": 5663
         },
         {
           "name": "tool_opened",
-          "count": 3617
+          "count": 3850
         },
         {
           "name": "session_start",
-          "count": 1517
+          "count": 1531
         },
         {
           "name": "screen_view",
-          "count": 1435
+          "count": 1452
         },
         {
           "name": "cluster_linked",
@@ -161,7 +142,7 @@
         },
         {
           "name": "app_version_active",
-          "count": 383
+          "count": 387
         },
         {
           "name": "first_open",
@@ -216,7 +197,7 @@
         {
           "country": "United States",
           "code": "US",
-          "users": 345
+          "users": 346
         },
         {
           "country": "Unknown",
@@ -231,7 +212,7 @@
         {
           "country": "Canada",
           "code": "CA",
-          "users": 22
+          "users": 23
         },
         {
           "country": "Germany",
@@ -241,7 +222,7 @@
         {
           "country": "Netherlands",
           "code": "NL",
-          "users": 12
+          "users": 14
         },
         {
           "country": "United Kingdom",
@@ -256,7 +237,7 @@
         {
           "country": "Italy",
           "code": "IT",
-          "users": 8
+          "users": 9
         },
         {
           "country": "France",
@@ -309,8 +290,18 @@
           "users": 4
         },
         {
+          "country": "Russia",
+          "code": "RU",
+          "users": 4
+        },
+        {
           "country": "Spain",
           "code": "ES",
+          "users": 4
+        },
+        {
+          "country": "Switzerland",
+          "code": "CH",
           "users": 4
         },
         {
@@ -326,16 +317,6 @@
         {
           "country": "Philippines",
           "code": "PH",
-          "users": 3
-        },
-        {
-          "country": "Russia",
-          "code": "RU",
-          "users": 3
-        },
-        {
-          "country": "Switzerland",
-          "code": "CH",
           "users": 3
         },
         {
@@ -421,7 +402,7 @@
         },
         {
           "city": "Unknown",
-          "users": 12
+          "users": 13
         },
         {
           "city": "Los Angeles",
@@ -451,11 +432,11 @@
       "versions": [
         {
           "version": "3.1.146",
-          "users": 480
+          "users": 483
         },
         {
           "version": "3.1.20",
-          "users": 30
+          "users": 31
         },
         {
           "version": "3.1.167",
@@ -503,11 +484,11 @@
       "android": [
         {
           "os": "Android 16",
-          "users": 203
+          "users": 204
         },
         {
           "os": "Android 17",
-          "users": 156
+          "users": 157
         },
         {
           "os": "Android 11",
@@ -515,7 +496,7 @@
         },
         {
           "os": "Android 15",
-          "users": 46
+          "users": 47
         },
         {
           "os": "Android 13",
@@ -529,7 +510,7 @@
       "languages": [
         {
           "language": "English",
-          "users": 505
+          "users": 507
         },
         {
           "language": "Spanish",
@@ -555,27 +536,27 @@
       "hours": [
         {
           "h": 0,
-          "users": 91
+          "users": 92
         },
         {
           "h": 1,
-          "users": 71
+          "users": 73
         },
         {
           "h": 2,
-          "users": 65
+          "users": 69
         },
         {
           "h": 3,
-          "users": 65
+          "users": 69
         },
         {
           "h": 4,
-          "users": 60
+          "users": 62
         },
         {
           "h": 5,
-          "users": 79
+          "users": 81
         },
         {
           "h": 6,
@@ -615,19 +596,19 @@
         },
         {
           "h": 15,
-          "users": 115
+          "users": 116
         },
         {
           "h": 16,
-          "users": 105
+          "users": 106
         },
         {
           "h": 17,
-          "users": 99
+          "users": 100
         },
         {
           "h": 18,
-          "users": 105
+          "users": 106
         },
         {
           "h": 19,
@@ -643,11 +624,11 @@
         },
         {
           "h": 22,
-          "users": 49
+          "users": 50
         },
         {
           "h": 23,
-          "users": 49
+          "users": 50
         }
       ],
       "weekdays": [
@@ -677,7 +658,7 @@
         },
         {
           "d": "Sun",
-          "users": 52
+          "users": 58
         }
       ],
       "screens": [
@@ -687,7 +668,7 @@
         },
         {
           "name": "Unknown",
-          "views": 86
+          "views": 103
         }
       ],
       "timeseries": [],
@@ -695,7 +676,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 42
+            "users": 48
           },
           {
             "name": "adapter: none (last engaged: Realtek",
@@ -714,18 +695,18 @@
             "users": 2
           },
           {
-            "name": "adapter: none (last engaged: MediaTe",
+            "name": "adapter: Atheros AR9271 \u00b7 ath9k_htc ",
             "users": 1
           },
           {
-            "name": "adapter: none (last engaged: Ralink ",
+            "name": "adapter: none (last engaged: Atheros",
             "users": 1
           }
         ],
         "extAdapter": [
           {
             "name": "false",
-            "users": 47
+            "users": 53
           }
         ],
         "skins": [
@@ -767,7 +748,7 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 92
+            "count": 103
           },
           {
             "name": "BODYCAM",
@@ -775,7 +756,7 @@
           },
           {
             "name": "HOMECAM",
-            "count": 30
+            "count": 35
           },
           {
             "name": "USERFLAG",
@@ -783,23 +764,23 @@
           },
           {
             "name": "HEALTH",
-            "count": 11
+            "count": 12
           },
           {
             "name": "FLIPPER",
             "count": 9
           },
           {
-            "name": "FLEET",
-            "count": 7
+            "name": "MESH",
+            "count": 9
           },
           {
             "name": "DRONE",
-            "count": 6
+            "count": 7
           },
           {
-            "name": "MESH",
-            "count": 6
+            "name": "FLEET",
+            "count": 7
           },
           {
             "name": "CCTV",
@@ -807,11 +788,11 @@
           },
           {
             "name": "ADULTTOY",
-            "count": 2
+            "count": 3
           },
           {
-            "name": "ACTIONCAM",
-            "count": 1
+            "name": "SURVEILLANCE",
+            "count": 2
           }
         ],
         "aircraft": [
@@ -861,46 +842,46 @@
       "label": "7 days",
       "totals": {
         "active": 1668,
-        "events": 152690,
-        "sessions": 10351,
+        "events": 153115,
+        "sessions": 10355,
         "newUsers": 787,
-        "engagementMinutes": 128423,
-        "avgEngagementSec": 4620,
+        "engagementMinutes": 128588,
+        "avgEngagementSec": 4625,
         "eventsPerSession": 14.8,
         "engagementRate": 89
       },
       "newReturning": {
         "new": 853,
-        "returning": 1106
+        "returning": 1107
       },
       "events": [
         {
           "name": "notable_spotted",
-          "count": 42992
+          "count": 43031
         },
         {
           "name": "user_engagement",
-          "count": 39521
+          "count": 39631
         },
         {
           "name": "tool_opened",
-          "count": 31464
+          "count": 31697
         },
         {
           "name": "capture",
-          "count": 10941
+          "count": 10949
         },
         {
           "name": "session_start",
-          "count": 10535
+          "count": 10549
         },
         {
           "name": "screen_view",
-          "count": 10172
+          "count": 10189
         },
         {
           "name": "app_version_active",
-          "count": 2273
+          "count": 2277
         },
         {
           "name": "cluster_linked",
@@ -973,7 +954,7 @@
         {
           "country": "Canada",
           "code": "CA",
-          "users": 64
+          "users": 65
         },
         {
           "country": "Australia",
@@ -993,7 +974,7 @@
         {
           "country": "Netherlands",
           "code": "NL",
-          "users": 29
+          "users": 31
         },
         {
           "country": "Brazil",
@@ -1031,6 +1012,11 @@
           "users": 14
         },
         {
+          "country": "Switzerland",
+          "code": "CH",
+          "users": 12
+        },
+        {
           "country": "Bangladesh",
           "code": "BD",
           "users": 11
@@ -1048,11 +1034,6 @@
         {
           "country": "Sweden",
           "code": "SE",
-          "users": 11
-        },
-        {
-          "country": "Switzerland",
-          "code": "CH",
           "users": 11
         },
         {
@@ -1198,7 +1179,7 @@
       "versions": [
         {
           "version": "3.1.146",
-          "users": 983
+          "users": 984
         },
         {
           "version": "3.1.20",
@@ -1302,27 +1283,27 @@
       "hours": [
         {
           "h": 0,
-          "users": 271
+          "users": 272
         },
         {
           "h": 1,
-          "users": 229
+          "users": 231
         },
         {
           "h": 2,
-          "users": 232
+          "users": 235
         },
         {
           "h": 3,
-          "users": 261
+          "users": 262
         },
         {
           "h": 4,
-          "users": 314
+          "users": 315
         },
         {
           "h": 5,
-          "users": 341
+          "users": 343
         },
         {
           "h": 6,
@@ -1362,11 +1343,11 @@
         },
         {
           "h": 15,
-          "users": 465
+          "users": 466
         },
         {
           "h": 16,
-          "users": 421
+          "users": 422
         },
         {
           "h": 17,
@@ -1390,11 +1371,11 @@
         },
         {
           "h": 22,
-          "users": 273
+          "users": 274
         },
         {
           "h": 23,
-          "users": 258
+          "users": 259
         }
       ],
       "weekdays": [
@@ -1424,7 +1405,7 @@
         },
         {
           "d": "Sun",
-          "users": 537
+          "users": 540
         }
       ],
       "screens": [
@@ -1434,7 +1415,7 @@
         },
         {
           "name": "Unknown",
-          "views": 86
+          "views": 103
         }
       ],
       "timeseries": [
@@ -1483,15 +1464,15 @@
         {
           "date": "2026-10-17",
           "activeUsers": 586,
-          "events": 27155,
-          "notable": 9112,
-          "captures": 5199
+          "events": 27372,
+          "notable": 9128,
+          "captures": 5207
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 52,
-          "events": 1778,
-          "notable": 247,
+          "activeUsers": 58,
+          "events": 1986,
+          "notable": 270,
           "captures": 967
         }
       ],
@@ -1499,7 +1480,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 42
+            "users": 48
           },
           {
             "name": "adapter: none (last engaged: Realtek",
@@ -1518,18 +1499,18 @@
             "users": 2
           },
           {
-            "name": "adapter: none (last engaged: MediaTe",
+            "name": "adapter: Atheros AR9271 \u00b7 ath9k_htc ",
             "users": 1
           },
           {
-            "name": "adapter: none (last engaged: Ralink ",
+            "name": "adapter: none (last engaged: Atheros",
             "users": 1
           }
         ],
         "extAdapter": [
           {
             "name": "false",
-            "users": 47
+            "users": 53
           }
         ],
         "skins": [
@@ -1571,7 +1552,7 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 92
+            "count": 103
           },
           {
             "name": "BODYCAM",
@@ -1579,7 +1560,7 @@
           },
           {
             "name": "HOMECAM",
-            "count": 30
+            "count": 35
           },
           {
             "name": "USERFLAG",
@@ -1587,23 +1568,23 @@
           },
           {
             "name": "HEALTH",
-            "count": 11
+            "count": 12
           },
           {
             "name": "FLIPPER",
             "count": 9
           },
           {
-            "name": "FLEET",
-            "count": 7
+            "name": "MESH",
+            "count": 9
           },
           {
             "name": "DRONE",
-            "count": 6
+            "count": 7
           },
           {
-            "name": "MESH",
-            "count": 6
+            "name": "FLEET",
+            "count": 7
           },
           {
             "name": "CCTV",
@@ -1611,11 +1592,11 @@
           },
           {
             "name": "ADULTTOY",
-            "count": 2
+            "count": 3
           },
           {
-            "name": "ACTIONCAM",
-            "count": 1
+            "name": "SURVEILLANCE",
+            "count": 2
           }
         ],
         "aircraft": [
@@ -1665,46 +1646,46 @@
       "label": "28 days",
       "totals": {
         "active": 4448,
-        "events": 434073,
+        "events": 434498,
         "sessions": 36342,
         "newUsers": 4199,
-        "engagementMinutes": 435034,
-        "avgEngagementSec": 5868,
-        "eventsPerSession": 11.9,
+        "engagementMinutes": 435198,
+        "avgEngagementSec": 5870,
+        "eventsPerSession": 12.0,
         "engagementRate": 85
       },
       "newReturning": {
         "new": 4247,
-        "returning": 1762
+        "returning": 1763
       },
       "events": [
         {
           "name": "user_engagement",
-          "count": 136826
+          "count": 136936
         },
         {
           "name": "notable_spotted",
-          "count": 105895
+          "count": 105934
         },
         {
           "name": "tool_opened",
-          "count": 76513
+          "count": 76746
         },
         {
           "name": "session_start",
-          "count": 37650
+          "count": 37664
         },
         {
           "name": "screen_view",
-          "count": 36246
+          "count": 36263
         },
         {
           "name": "capture",
-          "count": 19556
+          "count": 19564
         },
         {
           "name": "app_version_active",
-          "count": 6052
+          "count": 6056
         },
         {
           "name": "cluster_linked",
@@ -1786,7 +1767,7 @@
         {
           "country": "Canada",
           "code": "CA",
-          "users": 133
+          "users": 134
         },
         {
           "country": "Australia",
@@ -1801,7 +1782,7 @@
         {
           "country": "Netherlands",
           "code": "NL",
-          "users": 62
+          "users": 64
         },
         {
           "country": "India",
@@ -1846,7 +1827,7 @@
         {
           "country": "Switzerland",
           "code": "CH",
-          "users": 27
+          "users": 28
         },
         {
           "country": "Iran",
@@ -2010,7 +1991,7 @@
         },
         {
           "version": "3.1.146",
-          "users": 983
+          "users": 984
         },
         {
           "version": "3.0.208",
@@ -2114,23 +2095,23 @@
         },
         {
           "h": 1,
-          "users": 525
+          "users": 526
         },
         {
           "h": 2,
-          "users": 548
+          "users": 550
         },
         {
           "h": 3,
-          "users": 608
+          "users": 609
         },
         {
           "h": 4,
-          "users": 718
+          "users": 719
         },
         {
           "h": 5,
-          "users": 785
+          "users": 787
         },
         {
           "h": 6,
@@ -2170,11 +2151,11 @@
         },
         {
           "h": 15,
-          "users": 980
+          "users": 981
         },
         {
           "h": 16,
-          "users": 922
+          "users": 923
         },
         {
           "h": 17,
@@ -2198,11 +2179,11 @@
         },
         {
           "h": 22,
-          "users": 683
+          "users": 684
         },
         {
           "h": 23,
-          "users": 638
+          "users": 639
         }
       ],
       "weekdays": [
@@ -2232,7 +2213,7 @@
         },
         {
           "d": "Sun",
-          "users": 1312
+          "users": 1315
         }
       ],
       "screens": [
@@ -2242,7 +2223,7 @@
         },
         {
           "name": "Unknown",
-          "views": 86
+          "views": 103
         }
       ],
       "timeseries": [
@@ -2438,15 +2419,15 @@
         {
           "date": "2026-10-17",
           "activeUsers": 586,
-          "events": 27155,
-          "notable": 9112,
-          "captures": 5199
+          "events": 27372,
+          "notable": 9128,
+          "captures": 5207
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 52,
-          "events": 1778,
-          "notable": 247,
+          "activeUsers": 58,
+          "events": 1986,
+          "notable": 270,
           "captures": 967
         }
       ],
@@ -2454,7 +2435,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 42
+            "users": 48
           },
           {
             "name": "adapter: none (last engaged: Realtek",
@@ -2473,18 +2454,18 @@
             "users": 2
           },
           {
-            "name": "adapter: none (last engaged: MediaTe",
+            "name": "adapter: Atheros AR9271 \u00b7 ath9k_htc ",
             "users": 1
           },
           {
-            "name": "adapter: none (last engaged: Ralink ",
+            "name": "adapter: none (last engaged: Atheros",
             "users": 1
           }
         ],
         "extAdapter": [
           {
             "name": "false",
-            "users": 47
+            "users": 53
           }
         ],
         "skins": [
@@ -2526,7 +2507,7 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 92
+            "count": 103
           },
           {
             "name": "BODYCAM",
@@ -2534,7 +2515,7 @@
           },
           {
             "name": "HOMECAM",
-            "count": 30
+            "count": 35
           },
           {
             "name": "USERFLAG",
@@ -2542,23 +2523,23 @@
           },
           {
             "name": "HEALTH",
-            "count": 11
+            "count": 12
           },
           {
             "name": "FLIPPER",
             "count": 9
           },
           {
-            "name": "FLEET",
-            "count": 7
+            "name": "MESH",
+            "count": 9
           },
           {
             "name": "DRONE",
-            "count": 6
+            "count": 7
           },
           {
-            "name": "MESH",
-            "count": 6
+            "name": "FLEET",
+            "count": 7
           },
           {
             "name": "CCTV",
@@ -2566,11 +2547,11 @@
           },
           {
             "name": "ADULTTOY",
-            "count": 2
+            "count": 3
           },
           {
-            "name": "ACTIONCAM",
-            "count": 1
+            "name": "SURVEILLANCE",
+            "count": 2
           }
         ],
         "aircraft": [
@@ -2620,46 +2601,46 @@
       "label": "90 days",
       "totals": {
         "active": 6024,
-        "events": 462517,
+        "events": 462942,
         "sessions": 40776,
         "newUsers": 5953,
-        "engagementMinutes": 497787,
-        "avgEngagementSec": 4958,
-        "eventsPerSession": 11.3,
+        "engagementMinutes": 497952,
+        "avgEngagementSec": 4960,
+        "eventsPerSession": 11.4,
         "engagementRate": 82
       },
       "newReturning": {
         "new": 5974,
-        "returning": 1783
+        "returning": 1784
       },
       "events": [
         {
           "name": "user_engagement",
-          "count": 152659
+          "count": 152769
         },
         {
           "name": "notable_spotted",
-          "count": 105895
+          "count": 105934
         },
         {
           "name": "tool_opened",
-          "count": 76513
+          "count": 76746
         },
         {
           "name": "screen_view",
-          "count": 42576
+          "count": 42593
         },
         {
           "name": "session_start",
-          "count": 41882
+          "count": 41896
         },
         {
           "name": "capture",
-          "count": 19556
+          "count": 19564
         },
         {
           "name": "app_version_active",
-          "count": 6052
+          "count": 6056
         },
         {
           "name": "first_open",
@@ -2741,7 +2722,7 @@
         {
           "country": "Canada",
           "code": "CA",
-          "users": 143
+          "users": 144
         },
         {
           "country": "Australia",
@@ -2756,7 +2737,7 @@
         {
           "country": "Netherlands",
           "code": "NL",
-          "users": 64
+          "users": 66
         },
         {
           "country": "India",
@@ -2801,7 +2782,7 @@
         {
           "country": "Switzerland",
           "code": "CH",
-          "users": 28
+          "users": 29
         },
         {
           "country": "Thailand",
@@ -2969,7 +2950,7 @@
         },
         {
           "version": "3.1.146",
-          "users": 983
+          "users": 984
         },
         {
           "version": "3.1.0",
@@ -3069,23 +3050,23 @@
         },
         {
           "h": 1,
-          "users": 537
+          "users": 538
         },
         {
           "h": 2,
-          "users": 563
+          "users": 565
         },
         {
           "h": 3,
-          "users": 618
+          "users": 619
         },
         {
           "h": 4,
-          "users": 729
+          "users": 730
         },
         {
           "h": 5,
-          "users": 818
+          "users": 820
         },
         {
           "h": 6,
@@ -3125,11 +3106,11 @@
         },
         {
           "h": 15,
-          "users": 1064
+          "users": 1065
         },
         {
           "h": 16,
-          "users": 1040
+          "users": 1041
         },
         {
           "h": 17,
@@ -3153,11 +3134,11 @@
         },
         {
           "h": 22,
-          "users": 770
+          "users": 771
         },
         {
           "h": 23,
-          "users": 705
+          "users": 706
         }
       ],
       "weekdays": [
@@ -3187,7 +3168,7 @@
         },
         {
           "d": "Sun",
-          "users": 1643
+          "users": 1646
         }
       ],
       "screens": [
@@ -3197,7 +3178,7 @@
         },
         {
           "name": "Unknown",
-          "views": 86
+          "views": 103
         }
       ],
       "timeseries": [
@@ -3554,15 +3535,15 @@
         {
           "date": "2026-10-17",
           "activeUsers": 586,
-          "events": 27155,
-          "notable": 9112,
-          "captures": 5199
+          "events": 27372,
+          "notable": 9128,
+          "captures": 5207
         },
         {
           "date": "2026-10-18",
-          "activeUsers": 52,
-          "events": 1778,
-          "notable": 247,
+          "activeUsers": 58,
+          "events": 1986,
+          "notable": 270,
           "captures": 967
         }
       ],
@@ -3570,7 +3551,7 @@
         "adapters": [
           {
             "name": "adapter: none",
-            "users": 42
+            "users": 48
           },
           {
             "name": "adapter: none (last engaged: Realtek",
@@ -3589,18 +3570,18 @@
             "users": 2
           },
           {
-            "name": "adapter: none (last engaged: MediaTe",
+            "name": "adapter: Atheros AR9271 \u00b7 ath9k_htc ",
             "users": 1
           },
           {
-            "name": "adapter: none (last engaged: Ralink ",
+            "name": "adapter: none (last engaged: Atheros",
             "users": 1
           }
         ],
         "extAdapter": [
           {
             "name": "false",
-            "users": 47
+            "users": 53
           }
         ],
         "skins": [
@@ -3642,7 +3623,7 @@
         "notable": [
           {
             "name": "TRACKER",
-            "count": 92
+            "count": 103
           },
           {
             "name": "BODYCAM",
@@ -3650,7 +3631,7 @@
           },
           {
             "name": "HOMECAM",
-            "count": 30
+            "count": 35
           },
           {
             "name": "USERFLAG",
@@ -3658,23 +3639,23 @@
           },
           {
             "name": "HEALTH",
-            "count": 11
+            "count": 12
           },
           {
             "name": "FLIPPER",
             "count": 9
           },
           {
-            "name": "FLEET",
-            "count": 7
+            "name": "MESH",
+            "count": 9
           },
           {
             "name": "DRONE",
-            "count": 6
+            "count": 7
           },
           {
-            "name": "MESH",
-            "count": 6
+            "name": "FLEET",
+            "count": 7
           },
           {
             "name": "CCTV",
@@ -3682,11 +3663,11 @@
           },
           {
             "name": "ADULTTOY",
-            "count": 2
+            "count": 3
           },
           {
-            "name": "ACTIONCAM",
-            "count": 1
+            "name": "SURVEILLANCE",
+            "count": 2
           }
         ],
         "aircraft": [
