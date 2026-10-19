@@ -185,7 +185,8 @@ def run():
             "secrets": f("secrets", lambda: brk("customEvent:kind", since, "secret_unlock", 10)),
             "exportFormats": f("export formats", lambda: brk("customEvent:format", since, "export", 4)),
             "captureKinds": f("capture kinds", lambda: brk("customEvent:kind", since, "capture", 4)),
-            "sdr": f("sdr", lambda: brk("customEvent:source", since, "sdr_connected", 10, users=True)),
+            "sdr": f("sdr", lambda: brk("customEvent:source", since, "sdr_connected", 10)),
+            "captureNew": f("capture new", lambda: brk("customEvent:new", since, "capture", 3)),
             "uploadsBy": f("uploads by", lambda: brk("customEvent:target", since, "upload", 4)),
             "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", since, "notif_toggle", 20)),
             "chat": safe(f"{label} fun chat", chat, {}),
@@ -279,6 +280,20 @@ def run():
             "timeseries": safe(f"{label} ts", timeseries, []),
             "fun": safe(f"{label} fun", lambda: fun_block(days, label), {}),
         }
+
+    # ---- one-off diagnostic: how much of the audience looks like Play pre-launch test devices ----
+    def bot_check():
+        for model in ("OnePlus8Pro", "sdk_gphone16k_arm64"):
+            f = FilterExpression(filter=Filter(field_name="deviceModel", string_filter=Filter.StringFilter(value=model)))
+            for dim in ("city", "appVersion", "newVsReturning"):
+                r = report([dim], ["activeUsers"], 28, limit=6, order_metric="activeUsers", dim_filter=f)
+                print(f"bot check {model} by {dim}: " + ", ".join(
+                    f"{x.dimension_values[0].value}={x.metric_values[0].value}" for x in rows(r)))
+            r = report(["deviceModel"], ["activeUsers", "eventCount", "userEngagementDuration"], 28, limit=1, dim_filter=f)
+            for x in rows(r):
+                print(f"bot check {model} totals: users={x.metric_values[0].value} events={x.metric_values[1].value} "
+                      f"engagementSec={x.metric_values[2].value}")
+    safe("bot check", bot_check, None)
 
     # ---- realtime (last 30 min) ----
     def realtime():

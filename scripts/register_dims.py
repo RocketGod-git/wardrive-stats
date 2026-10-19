@@ -61,6 +61,7 @@ DIMS = [
     # Already sent by the app today (sdr_connected{source}, upload{target}) — registered so those cards fill too.
     (EVENT, "source", "SDR source", "sdr_connected SDR type"),
     (EVENT, "target", "Upload target", "upload service"),
+    (EVENT, "new", "Capture new", "capture: yes = first time this phone captured it"),
 ]
 
 SCOPE_NAME = {USER: "USER", EVENT: "EVENT"}

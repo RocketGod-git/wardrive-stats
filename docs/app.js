@@ -139,7 +139,7 @@ function renderRange() {
   list($('screens'), screenRows(r.screens), 'name', 'views');
   list($('versions'), r.versions, 'version', 'users');
   list($('countries'), notReported(r.countries, 'country'), 'country', 'users');
-  list($('cities'), r.cities, 'city', 'users');
+  list($('cities'), (r.cities || []).filter(c => c.city !== 'Not reported' && c.city !== 'Unknown'), 'city', 'users');
   list($('devices'), r.devices, 'model', 'users');
   list($('android'), r.android, 'os', 'users');
   list($('languages'), r.languages, 'language', 'users');
@@ -283,6 +283,7 @@ function renderFun(f, events) {
   funList('funSkins', f.skins, 'users', FUN_LABEL.skin);
   funList('funDrones', f.drones, 'count', FUN_LABEL.plain);
   funDonut('funCaptureChart', f.captureKinds, 'count', FUN_LABEL.capture);
+  funDonut('funCaptureNewChart', f.captureNew, 'count', (v) => v === 'yes' ? 'New to that phone' : v === 'no' ? 'Seen again' : v);
   funList('funTargets', f.uploadTargets, 'users', FUN_LABEL.targets);
   funDonut('funUploadsChart', f.uploadsBy, 'count', FUN_LABEL.target);
   funDonut('funDarkChart', f.darkMap, 'users', FUN_LABEL.dark);
@@ -290,7 +291,7 @@ function renderFun(f, events) {
   funList('funNotif', f.notifToggles, 'count', FUN_LABEL.notif);
   funList('funAlertsOff', (f.alertsOff || []).slice().sort((a, b) => (parseInt(a.name, 10) || 0) - (parseInt(b.name, 10) || 0)), 'users', FUN_LABEL.alerts);
   funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
-  funList('funSdr', f.sdr, f.sdr && f.sdr[0] && f.sdr[0].users != null ? 'users' : 'count', FUN_LABEL.sdr);
+  funList('funSdr', f.sdr, f.sdr && f.sdr[0] && f.sdr[0].count != null ? 'count' : 'users', FUN_LABEL.sdr);
   renderChat(f.chat || {});
 }
 function renderChat(ch) {
