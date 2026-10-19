@@ -135,7 +135,7 @@ function renderRange() {
   drawGlobe(r.countries || []);
   drawEvents(r.events || []);
   if ((r.timeseries || []).length) { show('tsPanel'); drawTimeseries(r.timeseries); } else hide('tsPanel');
-  drawHours(r.hours || []); drawDow(r.weekdays || []); drawNewReturning(r.newReturning || {});
+  drawHours(r.hours || []); drawDow(r.weekdays || []); drawNewReturning(r.totals || {});
   list($('screens'), screenRows(r.screens), 'name', 'views');
   list($('versions'), r.versions, 'version', 'users');
   list($('countries'), notReported(r.countries, 'country'), 'country', 'users');
@@ -349,9 +349,12 @@ function drawDow(wd) {
     data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users), backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
 }
-function drawNewReturning(nr) {
+// New = first opened the app in this range; returning = first opened before it. Both from the range totals, so the
+// two always add up to ACTIVE USERS (GA4's newVsReturning counts someone twice if they were new, then came back).
+function drawNewReturning(t) {
+  const fresh = Math.min(t.newUsers || 0, t.active || 0), back = Math.max(0, (t.active || 0) - fresh);
   mkChart('nrChart', { type: 'doughnut',
-    data: { labels: ['New users', 'Returning'], datasets: [{ data: [nr.new || 0, nr.returning || 0], backgroundColor: [ACCENT, 'rgba(22,192,255,.55)'], borderColor: '#0e1619', borderWidth: 3 }] },
+    data: { labels: ['New users', 'Returning'], datasets: [{ data: [fresh, back], backgroundColor: [ACCENT, 'rgba(22,192,255,.55)'], borderColor: '#0e1619', borderWidth: 3 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } } });
 }
 
