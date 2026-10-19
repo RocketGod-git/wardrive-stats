@@ -1,58 +1,58 @@
 {
-  "generatedAt": "2026-10-19T20:17:45Z",
+  "generatedAt": "2026-10-19T20:24:33Z",
   "realtime": {
-    "activeUsers": 49,
+    "activeUsers": 46,
     "events": [
       {
         "name": "tool_opened",
-        "count": 238
-      },
-      {
-        "name": "notable_spotted",
-        "count": 167
+        "count": 191
       },
       {
         "name": "user_engagement",
-        "count": 161
+        "count": 154
+      },
+      {
+        "name": "notable_spotted",
+        "count": 139
       },
       {
         "name": "screen_view",
-        "count": 43
+        "count": 40
       },
       {
         "name": "session_start",
-        "count": 37
+        "count": 35
       },
       {
         "name": "capture",
-        "count": 21
+        "count": 18
       },
       {
         "name": "app_version_active",
-        "count": 13
-      },
-      {
-        "name": "cluster_linked",
-        "count": 7
+        "count": 11
       },
       {
         "name": "notable_aircraft",
         "count": 5
       },
       {
-        "name": "upload",
-        "count": 5
-      },
-      {
-        "name": "sdr_connected",
+        "name": "cluster_linked",
         "count": 4
       },
       {
-        "name": "first_open",
-        "count": 3
+        "name": "drone_detected",
+        "count": 2
       },
       {
-        "name": "drone_detected",
+        "name": "first_open",
+        "count": 2
+      },
+      {
+        "name": "sdr_connected",
+        "count": 2
+      },
+      {
+        "name": "upload",
         "count": 2
       },
       {
@@ -64,7 +64,7 @@
       {
         "country": "United States",
         "code": "US",
-        "users": 37
+        "users": 34
       },
       {
         "country": "Canada",
@@ -87,8 +87,8 @@
         "users": 1
       },
       {
-        "country": "Greece",
-        "code": "GR",
+        "country": "Germany",
+        "code": "DE",
         "users": 1
       },
       {
@@ -102,8 +102,8 @@
         "users": 1
       },
       {
-        "country": "Switzerland",
-        "code": "CH",
+        "country": "Poland",
+        "code": "PL",
         "users": 1
       },
       {
@@ -718,11 +718,11 @@
       "timeseries": [],
       "fun": {
         "since": "2026-10-18",
+        "rangeStart": "2026-10-18",
         "counts": {
           "notable": 5288,
-          "handshakes": 0,
-          "pmkids": 0,
-          "cracked": 0,
+          "captures": 2640,
+          "cracked": 11,
           "drones": 32,
           "aircraft": 42,
           "secrets": 22
@@ -1073,7 +1073,16 @@
             "count": 4
           }
         ],
-        "captureKinds": [],
+        "captureKinds": [
+          {
+            "name": "handshake",
+            "count": 2535
+          },
+          {
+            "name": "pmkid",
+            "count": 105
+          }
+        ],
         "sdr": [
           {
             "name": "RTL-SDR",
@@ -1787,14 +1796,14 @@
       ],
       "fun": {
         "since": "2026-10-18",
+        "rangeStart": "2026-10-12",
         "counts": {
-          "notable": 5288,
-          "handshakes": 0,
-          "pmkids": 0,
-          "cracked": 0,
-          "drones": 32,
-          "aircraft": 42,
-          "secrets": 22
+          "notable": 43853,
+          "captures": 12106,
+          "cracked": 30,
+          "drones": 226,
+          "aircraft": 341,
+          "secrets": 86
         },
         "adapters": [
           {
@@ -2142,7 +2151,16 @@
             "count": 4
           }
         ],
-        "captureKinds": [],
+        "captureKinds": [
+          {
+            "name": "handshake",
+            "count": 2535
+          },
+          {
+            "name": "pmkid",
+            "count": 105
+          }
+        ],
         "sdr": [
           {
             "name": "RTL-SDR",
@@ -3007,14 +3025,14 @@
       ],
       "fun": {
         "since": "2026-10-18",
+        "rangeStart": "2026-09-21",
         "counts": {
-          "notable": 5288,
-          "handshakes": 0,
-          "pmkids": 0,
-          "cracked": 0,
-          "drones": 32,
-          "aircraft": 42,
-          "secrets": 22
+          "notable": 111190,
+          "captures": 21247,
+          "cracked": 102,
+          "drones": 977,
+          "aircraft": 686,
+          "secrets": 290
         },
         "adapters": [
           {
@@ -3362,7 +3380,16 @@
             "count": 4
           }
         ],
-        "captureKinds": [],
+        "captureKinds": [
+          {
+            "name": "handshake",
+            "count": 2535
+          },
+          {
+            "name": "pmkid",
+            "count": 105
+          }
+        ],
         "sdr": [
           {
             "name": "RTL-SDR",
@@ -4395,14 +4422,14 @@
       ],
       "fun": {
         "since": "2026-10-18",
+        "rangeStart": "2026-07-21",
         "counts": {
-          "notable": 5288,
-          "handshakes": 0,
-          "pmkids": 0,
-          "cracked": 0,
-          "drones": 32,
-          "aircraft": 42,
-          "secrets": 22
+          "notable": 111190,
+          "captures": 21247,
+          "cracked": 102,
+          "drones": 977,
+          "aircraft": 686,
+          "secrets": 290
         },
         "adapters": [
           {
@@ -4750,7 +4777,16 @@
             "count": 4
           }
         ],
-        "captureKinds": [],
+        "captureKinds": [
+          {
+            "name": "handshake",
+            "count": 2535
+          },
+          {
+            "name": "pmkid",
+            "count": 105
+          }
+        ],
         "sdr": [
           {
             "name": "RTL-SDR",
