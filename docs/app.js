@@ -201,8 +201,9 @@ function adapterName(v) {
   s = s.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)?/ig, '').replace(/\($/, '').trim();
   const parts = s.split('·').map(x => x.trim()).filter(Boolean);
   if (!parts.length) return 'phone';
-  if (/^usb ser/i.test(parts[0])) return parts[1] ? parts[1].replace(/\(.*$/, '').trim() || 'ESP32 serial' : 'ESP32 serial';
+  if (/^usb ser/i.test(parts[0])) return 'ESP32 board';
   // cut-off values that kept only the vendor: Atheros = the AR9271 (the only Atheros chip supported)
+  if (/^esp32/i.test(parts[0])) return 'ESP32 board';
   if (/^atheros$/i.test(parts[0])) return 'Atheros AR9271';
   if (/^(realtek|mediatek|ralink)$/i.test(parts[0])) return parts[0] + ' (model not reported)';
   return parts[0];
