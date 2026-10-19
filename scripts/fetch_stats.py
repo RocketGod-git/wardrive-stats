@@ -30,6 +30,10 @@ RANGES = [(1, "24 hours"), (7, "7 days"), (28, "28 days"), (90, "90 days")]
 # The app's custom dimensions were registered on this day; GA4 has no per-type breakdown data before it. Headline
 # counts use the plain event totals, which cover the whole selected range.
 FUN_SINCE = date(2026, 10, 18)
+# Google Play's pre-launch report installs every release on Firebase Test Lab devices, and they count as users: these
+# models showed up as ~1,400 one-visit "users" with no city or in Google data-center cities. Every query excludes them.
+# (The app turns analytics off on Test Lab devices from 3.1.177.)
+BOT_DEVICE_MODELS = ["OnePlus8Pro", "sdk_gphone16k_arm64"]
 
 
 def client():
@@ -63,6 +67,15 @@ def rows(resp):
     return resp.rows or []
 
 
+def no_bots(f=None):
+    """[f] AND the device is not a known pre-launch test device."""
+    bots = FilterExpression(not_expression=FilterExpression(filter=Filter(field_name="deviceModel",
+        in_list_filter=Filter.InListFilter(values=BOT_DEVICE_MODELS))))
+    if f is None:
+        return bots
+    return FilterExpression(and_group=FilterExpressionList(expressions=[f, bots]))
+
+
 def name_filter(event_name, versions=None):
     f = FilterExpression(filter=Filter(field_name="eventName",
         string_filter=Filter.StringFilter(value=event_name)))
@@ -88,12 +101,12 @@ def run():
             dimensions=[Dimension(name=d) for d in dims],
             metrics=[Metric(name=m) for m in mets],
             date_ranges=[DateRange(start_date=start or f"{days}daysAgo", end_date="today")],
-            order_bys=ob, limit=limit, dimension_filter=dim_filter,
+            order_bys=ob, limit=limit, dimension_filter=no_bots(dim_filter),
         ))
 
     def metric1(name, days):
         r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name=name)],
-            date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")]))
+            date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")], dimension_filter=no_bots()))
         return float(r.rows[0].metric_values[0].value) if r.rows else 0.0
 
     def lst(dim, key, days, limit=8, metric="activeUsers", vk="users"):
@@ -135,7 +148,7 @@ def run():
 
     def ev_metric(event, metric, start, versions=None):
         r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name=metric)],
-            date_ranges=[DateRange(start_date=start, end_date="today")], dimension_filter=name_filter(event, versions)))
+            date_ranges=[DateRange(start_date=start, end_date="today")], dimension_filter=no_bots(name_filter(event, versions))))
         return int(float(r.rows[0].metric_values[0].value)) if r.rows else 0
 
     def fun_block(days, label):
@@ -197,7 +210,7 @@ def run():
             r = c.run_report(RunReportRequest(property=p, metrics=[
                 Metric(name="activeUsers"), Metric(name="eventCount"), Metric(name="sessions"),
                 Metric(name="newUsers"), Metric(name="userEngagementDuration"), Metric(name="engagementRate")],
-                date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")]))
+                date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")], dimension_filter=no_bots()))
             v = r.rows[0].metric_values if r.rows else None
             au = int(float(v[0].value)) if v else 0
             ev = int(float(v[1].value)) if v else 0
@@ -280,20 +293,6 @@ def run():
             "timeseries": safe(f"{label} ts", timeseries, []),
             "fun": safe(f"{label} fun", lambda: fun_block(days, label), {}),
         }
-
-    # ---- one-off diagnostic: how much of the audience looks like Play pre-launch test devices ----
-    def bot_check():
-        for model in ("OnePlus8Pro", "sdk_gphone16k_arm64"):
-            f = FilterExpression(filter=Filter(field_name="deviceModel", string_filter=Filter.StringFilter(value=model)))
-            for dim in ("city", "appVersion", "newVsReturning"):
-                r = report([dim], ["activeUsers"], 28, limit=6, order_metric="activeUsers", dim_filter=f)
-                print(f"bot check {model} by {dim}: " + ", ".join(
-                    f"{x.dimension_values[0].value}={x.metric_values[0].value}" for x in rows(r)))
-            r = report(["deviceModel"], ["activeUsers", "eventCount", "userEngagementDuration"], 28, limit=1, dim_filter=f)
-            for x in rows(r):
-                print(f"bot check {model} totals: users={x.metric_values[0].value} events={x.metric_values[1].value} "
-                      f"engagementSec={x.metric_values[2].value}")
-    safe("bot check", bot_check, None)
 
     # ---- realtime (last 30 min) ----
     def realtime():
