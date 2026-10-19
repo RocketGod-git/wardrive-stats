@@ -294,6 +294,27 @@ def run():
             "fun": safe(f"{label} fun", lambda: fun_block(days, label), {}),
         }
 
+    # ---- one-off diagnostic: user-property coverage vs users on new app versions ----
+    def prop_check():
+        start = FUN_SINCE.isoformat()
+        r = report(["appVersion"], ["activeUsers"], 0, limit=40, order_metric="activeUsers", start=start)
+        print("prop check users by version since %s: " % start + ", ".join(
+            f"{x.dimension_values[0].value}={x.metric_values[0].value}" for x in rows(r)))
+        r = report(["appVersion", "customUser:skin"], ["activeUsers"], 0, limit=60, order_metric="activeUsers", start=start)
+        print("prop check skin by version: " + ", ".join(
+            f"{x.dimension_values[0].value}/{x.dimension_values[1].value}={x.metric_values[0].value}" for x in rows(r)))
+        r = report(["appVersion", "deviceModel"], ["activeUsers"], 0, limit=60, order_metric="activeUsers", start=start,
+                   dim_filter=FilterExpression(filter=Filter(field_name="appVersion", string_filter=Filter.StringFilter(
+                       value=r"^3\.1\.(16[89]|17[0-9])", match_type=Filter.StringFilter.MatchType.PARTIAL_REGEXP))))
+        print("prop check new-version devices: " + ", ".join(
+            f"{x.dimension_values[0].value}/{x.dimension_values[1].value}={x.metric_values[0].value}" for x in rows(r)))
+        r = c.run_report(RunReportRequest(property=p, dimensions=[Dimension(name="deviceModel")], metrics=[Metric(name="activeUsers")],
+            date_ranges=[DateRange(start_date=start, end_date="today")], limit=10,
+            dimension_filter=FilterExpression(filter=Filter(field_name="deviceModel", in_list_filter=Filter.InListFilter(values=BOT_DEVICE_MODELS)))))
+        print("prop check excluded models since Oct 18: " + ", ".join(
+            f"{x.dimension_values[0].value}={x.metric_values[0].value}" for x in rows(r)))
+    safe("prop check", prop_check, None)
+
     # ---- realtime (last 30 min) ----
     def realtime():
         ru = c.run_realtime_report(RunRealtimeReportRequest(property=p, metrics=[Metric(name="activeUsers")]))
