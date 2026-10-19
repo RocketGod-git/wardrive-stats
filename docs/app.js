@@ -10,9 +10,9 @@ const show = (id) => { const e = $(id); if (e) e.style.display = ''; };
 const hide = (id) => { const e = $(id); if (e) e.style.display = 'none'; };
 
 const LABELS = {
-  notable_spotted: 'Notable devices found', notable_aircraft: 'Notable aircraft', drone_detected: 'Drones detected',
-  capture: 'Handshakes', capture_cracked: 'Passwords cracked', upload: 'Uploads',
-  adapter_engaged: 'Wi-Fi adapters engaged', sdr_connected: 'SDR sessions', cluster_linked: 'Mesh cluster links',
+  notable_spotted: 'Notable devices spotted', notable_aircraft: 'Notable aircraft', drone_detected: 'Remote ID drones',
+  capture: 'Captures', capture_cracked: 'Passwords cracked', upload: 'Uploads',
+  adapter_engaged: 'Wi-Fi adapters engaged', sdr_connected: 'SDR connections', cluster_linked: 'Mesh cluster peer joins',
   language_set: 'Language changed', export: 'Data exports', tool_opened: 'Tools opened', secret_unlock: 'Secret unlocks',
   app_version_active: 'Active app versions', session_start: 'Sessions started', screen_view: 'Screens viewed',
   user_engagement: 'User engagement', first_open: 'New installs', app_update: 'App updated', app_remove: 'Uninstalls',
@@ -138,7 +138,7 @@ function renderRange() {
   drawHours(r.hours || []); drawDow(r.weekdays || []); drawNewReturning(r.newReturning || {});
   list($('screens'), screenRows(r.screens), 'name', 'views');
   list($('versions'), r.versions, 'version', 'users');
-  list($('countries'), r.countries, 'country', 'users');
+  list($('countries'), notReported(r.countries, 'country'), 'country', 'users');
   list($('cities'), r.cities, 'city', 'users');
   list($('devices'), r.devices, 'model', 'users');
   list($('android'), r.android, 'os', 'users');
@@ -156,7 +156,7 @@ const titleEnum = (s) => String(s || '').toLowerCase().replace(/_/g, ' ').replac
 const NOTABLE_NAMES = {
   SURVEILLANCE: 'Flock & surveillance cams', TRACKER: 'Trackers', FORENSIC: 'Forensic / IMSI catchers',
   CCTV: 'CCTV cameras', FLEET: 'Fleet cams & cellular routers', EMERGENCYVEH: 'Emergency services routers', TRAFFIC: 'ALPR cameras', BODYCAM: 'Body cams',
-  DRONE: 'Drones', RFTOOL: 'RF attack tools', HACKTOOL: 'Hacking gadgets', FLIPPER: 'Flipper Zeros',
+  DRONE: 'Drones (by maker)', RFTOOL: 'RF attack tools', HACKTOOL: 'Hacking gadgets', FLIPPER: 'Flipper Zeros',
   GLASSES: 'Smart glasses', ACTIONCAM: 'Action cams', POLICE: 'Two-way radios', POLICERADAR: 'Police radar',
   LIGHTBAR: 'Emergency light bars', GUNSHOT: 'Gunshot sensors', MEDICAL: 'Medical / EMS gear',
   RETAIL: 'Retail tracking beacons', SPYCAM: 'Hidden spy cams', ADULTTOY: 'Adult toys', MESH: 'Mesh radios',
@@ -185,9 +185,13 @@ const FUN_LABEL = {
   format: (v) => ({ CSV: 'CSV', GZIP: 'CSV.gz', ZIP: 'ZIP' }[v] || v),
   alerts: (v) => v === '0' ? 'None — all alerts on' : v === '5' ? '5 (app default)' : `${v} switch${v === '1' ? '' : 'es'} off`,
   adapter: (v) => v === 'phone' ? 'Phone only (no adapter)' : v,
+  // Sticks that don't report "Blog V3/V4" over USB (older V3s and clones) arrive as plain "RTL-SDR".
+  sdr: (v) => v === 'RTL-SDR' ? 'RTL-SDR (model not reported)' : v,
   // tool / SDR / drone labels arrive human-readable; only SHOUTY_SNAKE enum values get title-cased
   plain: (v) => v === 'unknown' ? 'Unknown' : (/_/.test(v) && /^[A-Z0-9_]+$/.test(v) ? titleEnum(v) : v)
 };
+
+const notReported = (rows, key) => (rows || []).map(r => r[key] === 'Unknown' ? Object.assign({}, r, { [key]: 'Not reported' }) : r);
 
 // Older app versions reported the adapter as a log line ("adapter: none (last engaged: Realtek …", driver names, USB ids)
 // cut at 36 characters. Reduce every value to the chip itself and merge the duplicates; "phone" = no external adapter.
@@ -201,12 +205,18 @@ function adapterName(v) {
   s = s.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)?/ig, '').replace(/\($/, '').trim();
   const parts = s.split('·').map(x => x.trim()).filter(Boolean);
   if (!parts.length) return 'phone';
-  if (/^usb ser/i.test(parts[0])) return 'ESP32 board';
-  // cut-off values that kept only the vendor: Atheros = the AR9271 (the only Atheros chip supported)
-  if (/^esp32/i.test(parts[0])) return 'ESP32 board';
-  if (/^atheros$/i.test(parts[0])) return 'Atheros AR9271';
-  if (/^(realtek|mediatek|ralink)$/i.test(parts[0])) return parts[0] + ' (model not reported)';
-  return parts[0];
+  const head = parts[0];
+  // SDRs are not Wi-Fi adapters (older versions listed them here): no Wi-Fi adapter = phone.
+  if (/^(rtl-?sdr|hackrf|portapack|sdr)/i.test(head)) return 'phone';
+  if (/^usb ser/i.test(head) || /^esp32/i.test(head)) return 'ESP32 board';
+  // Values cut off at 36 characters by older versions kept only part of the vendor ("MediaTe", "Realt").
+  // Atheros = the AR9271 (the only Atheros chip supported); the others can't be narrowed to a model.
+  const low = head.toLowerCase();
+  if (low.length >= 3 && 'atheros'.startsWith(low)) return 'Atheros AR9271';
+  for (const v of ['Realtek', 'MediaTek', 'Ralink']) {
+    if (low.length >= 3 && v.toLowerCase().startsWith(low)) return v + ' (model not reported)';
+  }
+  return head;
 }
 function adapterRows(rows) {
   const by = {};
@@ -222,7 +232,7 @@ function extRows(adapters) {
 }
 // Screen names: the app names its screens from 3.1.173; older versions report none, so drop those rows.
 function screenRows(rows) {
-  return (rows || []).filter(r => r.name && r.name !== 'Unknown' && r.name !== '(not set)')
+  return (rows || []).filter(r => r.name && r.name !== 'Unknown' && r.name !== 'Not reported' && r.name !== '(not set)')
     .map(r => Object.assign({}, r, { name: String(r.name).replace(/([a-z])([A-Z])/g, '$1 $2') }));
 }
 
@@ -246,14 +256,18 @@ function funDonut(id, rows, countKey, labelFn) {
     options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } } });
 }
 function renderFun(f, events) {
-  const ev = {}; events.forEach(e => { ev[e.name] = e.count; });
+  const k = f.counts || {};
+  const since = f.since ? new Date(f.since + 'T12:00:00') : null;
+  const sinceEl = $('funSince');
+  if (sinceEl) sinceEl.textContent = since && !isNaN(since)
+    ? 'since ' + since.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
   $('funCards').innerHTML = [
-    card('Notable devices', fmt(ev.notable_spotted || 0), 'spotted', true),
-    card('Handshakes', fmt(ev.capture || 0), 'captured'),
-    card('Passwords', fmt(ev.capture_cracked || 0), 'cracked'),
-    card('Drones', fmt(ev.drone_detected || 0), 'Remote ID'),
-    card('Aircraft', fmt(ev.notable_aircraft || 0), 'notable, flagged'),
-    card('Secret unlocks', fmt(ev.secret_unlock || 0), 'codes punched')
+    card('Notable devices', fmt(k.notable || 0), 'spotted', true),
+    card('Handshakes', fmt(k.handshakes || 0), `${fmt(k.pmkids || 0)} PMKIDs`),
+    card('Passwords', fmt(k.cracked || 0), 'cracked'),
+    card('Drones', fmt(k.drones || 0), 'Remote ID'),
+    card('Aircraft', fmt(k.aircraft || 0), 'notable, flagged'),
+    card('Secret unlocks', fmt(k.secrets || 0), 'codes punched')
   ].join('');
   const adapters = adapterRows(f.adapters);
   funList('funAdapters', adapters, 'users', FUN_LABEL.adapter);
@@ -271,7 +285,7 @@ function renderFun(f, events) {
   funList('funNotif', f.notifToggles, 'count', FUN_LABEL.notif);
   funList('funAlertsOff', (f.alertsOff || []).slice().sort((a, b) => (parseInt(a.name, 10) || 0) - (parseInt(b.name, 10) || 0)), 'users', FUN_LABEL.alerts);
   funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
-  funList('funSdr', f.sdr, 'count', FUN_LABEL.plain);
+  funList('funSdr', f.sdr, f.sdr && f.sdr[0] && f.sdr[0].users != null ? 'users' : 'count', FUN_LABEL.sdr);
   renderChat(f.chat || {});
 }
 function renderChat(ch) {
@@ -306,8 +320,13 @@ function drawTimeseries(tsIn) {
       plugins: { legend: { labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 10 } } },
       scales: { x: baseAxis(), y: baseAxis({ position: 'left' }), y1: baseAxis({ position: 'right', grid: { drawOnChartArea: false, color: GRID } }) } } });
 }
+// The EVENTS chart shows what people do in the app. Left out: GA4's own bookkeeping (engagement pings, session and
+// screen views, OS/app updates, cleared data, crashes), the app's version heartbeat, and the capture / crack / upload
+// events whose older app versions counted repeats or nothing at all (their accurate counts are in Fun data).
+const EVENT_HIDE = new Set(['user_engagement', 'session_start', 'screen_view', 'app_version_active', 'os_update',
+  'app_update', 'app_clear_data', 'app_exception', 'language_set', 'capture', 'capture_cracked', 'upload']);
 function drawEvents(evs) {
-  const top = evs.slice(0, 12);
+  const top = evs.filter(e => !EVENT_HIDE.has(e.name)).slice(0, 12);
   mkChart('evChart', { type: 'bar',
     data: { labels: top.map(e => pretty(e.name)), datasets: [{ data: top.map(e => e.count), backgroundColor: top.map((_, i) => i === 0 ? ACCENT : 'rgba(22,192,255,.55)'), borderRadius: 5 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });

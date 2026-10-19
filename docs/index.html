@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=24">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
   // "Get it on Google Play" button is pointless — they already have the app. Website visitors never carry either.
@@ -121,7 +121,7 @@
   <section>
     <div class="fun-head">
       <h2>🎲 Fun data</h2>
-      <span class="fun-sub">what wardrivers run, find &amp; tweak</span>
+      <span class="fun-sub">what wardrivers run, find &amp; tweak <span id="funSince"></span></span>
     </div>
   </section>
   <section class="grid cards" id="funCards"></section>
@@ -138,7 +138,7 @@
     <div class="panel"><h2>Favorite themes</h2><div class="list" id="funSkins"></div></div>
   </section>
   <section class="two">
-    <div class="panel"><h2>Drones by type</h2><div class="list" id="funDrones"></div></div>
+    <div class="panel"><h2>Remote ID drones by type</h2><div class="list" id="funDrones"></div></div>
     <div class="panel"><h2>Captures · handshakes vs PMKIDs</h2><div class="chartbox"><canvas id="funCaptureChart"></canvas></div><div class="collecting" style="display:none"></div></div>
   </section>
   <section class="two">
@@ -195,6 +195,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=23"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

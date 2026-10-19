@@ -16,16 +16,24 @@ can't sink the file.
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from google.oauth2 import service_account
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
     DateRange, Dimension, Metric, RunReportRequest, RunRealtimeReportRequest, OrderBy, Filter, FilterExpression,
+    FilterExpressionList,
 )
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "stats.json")
 RANGES = [(1, "24 hours"), (7, "7 days"), (28, "28 days"), (90, "90 days")]
+# The app's custom dimensions were registered on this day; GA4 has no breakdown data before it, so every "Fun data"
+# figure is measured from here (or the range start, if later) — the whole section shares one honest window.
+FUN_SINCE = date(2026, 10, 18)
+# Captures count once per new capture from 3.1.173, and cracked passwords once per network from 3.1.177; earlier
+# versions repeated them, so those counts only use events from these versions on.
+CAPTURE_VERSIONS = r"^(3\.1\.(17[3-9]|1[89][0-9]|[2-9][0-9]{2})|3\.([2-9]|[1-9][0-9])\.|([4-9]|[1-9][0-9])\.)"
+CRACKED_VERSIONS = r"^(3\.1\.(17[7-9]|1[89][0-9]|[2-9][0-9]{2})|3\.([2-9]|[1-9][0-9])\.|([4-9]|[1-9][0-9])\.)"
 
 
 def client():
@@ -59,16 +67,21 @@ def rows(resp):
     return resp.rows or []
 
 
-def name_filter(event_name):
-    return FilterExpression(filter=Filter(field_name="eventName",
+def name_filter(event_name, versions=None):
+    f = FilterExpression(filter=Filter(field_name="eventName",
         string_filter=Filter.StringFilter(value=event_name)))
+    if not versions:
+        return f
+    v = FilterExpression(filter=Filter(field_name="appVersion", string_filter=Filter.StringFilter(
+        value=versions, match_type=Filter.StringFilter.MatchType.PARTIAL_REGEXP)))
+    return FilterExpression(and_group=FilterExpressionList(expressions=[f, v]))
 
 
 def run():
     c = client()
     p = prop()
 
-    def report(dims, mets, days, limit=25, order_metric=None, order_dim=None, dim_filter=None):
+    def report(dims, mets, days, limit=25, order_metric=None, order_dim=None, dim_filter=None, start=None):
         ob = []
         if order_metric:
             ob = [OrderBy(metric=OrderBy.MetricOrderBy(metric_name=order_metric), desc=True)]
@@ -78,7 +91,7 @@ def run():
             property=p,
             dimensions=[Dimension(name=d) for d in dims],
             metrics=[Metric(name=m) for m in mets],
-            date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")],
+            date_ranges=[DateRange(start_date=start or f"{days}daysAgo", end_date="today")],
             order_bys=ob, limit=limit, dimension_filter=dim_filter,
         ))
 
@@ -93,7 +106,7 @@ def run():
         for x in rows(r):
             v = x.dimension_values[0].value
             if v in ("(not set)", ""):
-                v = "Unknown"
+                v = "Not reported"
             out.append({key: v, vk: int(float(x.metric_values[0].value))})
         return out
 
@@ -107,14 +120,15 @@ def run():
     if custom is not None:
         print(f"custom dimensions registered: {sorted(custom) or 'none'}")
 
-    def brk(dim, days, event=None, limit=10):
-        """Top values of one custom dimension — activeUsers for a user property, eventCount of [event] for an event
-        param. '(not set)' rows (app versions older than the param) are dropped. Unregistered dims → []."""
+    def brk(dim, start, event=None, limit=10, users=False, versions=None):
+        """Top values of one custom dimension since [start] — activeUsers for a user property (or [users]),
+        eventCount of [event] for an event param. '(not set)' rows (app versions older than the param) are dropped.
+        Unregistered dims → []."""
         if custom is not None and dim not in custom:
             return []
-        metric, vk = ("eventCount", "count") if event else ("activeUsers", "users")
-        r = report([dim], [metric], days, limit=limit + 1, order_metric=metric,
-                   dim_filter=name_filter(event) if event else None)
+        metric, vk = ("activeUsers", "users") if (users or not event) else ("eventCount", "count")
+        r = report([dim], [metric], 0, limit=limit + 1, order_metric=metric, start=start,
+                   dim_filter=name_filter(event, versions) if event else None)
         out = []
         for x in rows(r):
             v = x.dimension_values[0].value
@@ -123,46 +137,62 @@ def run():
             out.append({"name": v, vk: int(float(x.metric_values[0].value))})
         return out[:limit]
 
-    def ev_metric(event, metric, days):
+    def ev_metric(event, metric, start, versions=None):
         r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name=metric)],
-            date_ranges=[DateRange(start_date=f"{days}daysAgo", end_date="today")], dimension_filter=name_filter(event)))
+            date_ranges=[DateRange(start_date=start, end_date="today")], dimension_filter=name_filter(event, versions)))
         return int(float(r.rows[0].metric_values[0].value)) if r.rows else 0
 
     def fun_block(days, label):
+        days_start = datetime.now(timezone.utc).date() - timedelta(days=days)
+        since = max(days_start, FUN_SINCE).isoformat()
+
         def f(key, fn):
             return safe(f"{label} fun {key}", fn, [])
 
+        def n(key, event, versions=None):
+            return safe(f"{label} fun count {key}", lambda: ev_metric(event, "eventCount", since, versions), 0)
+
+        caps = safe(f"{label} fun capture kinds", lambda: brk("customEvent:kind", since, "capture", 4, versions=CAPTURE_VERSIONS), [])
+
         def chat():
             return {
-                "openedUsers": safe(f"{label} chat opened", lambda: ev_metric("chat_opened", "activeUsers", days), 0),
-                "senders": safe(f"{label} chat senders", lambda: ev_metric("chat_sent", "activeUsers", days), 0),
-                "sent": safe(f"{label} chat sent", lambda: ev_metric("chat_sent", "eventCount", days), 0),
-                "byKind": f("chat kind", lambda: brk("customEvent:kind", days, "chat_sent", 6)),
-                "replies": f("chat reply", lambda: brk("customEvent:reply", days, "chat_sent", 3)),
-                "statsViews": f("chat stats views", lambda: brk("customEvent:src", days, "chat_stats_view", 3)),
+                "openedUsers": safe(f"{label} chat opened", lambda: ev_metric("chat_opened", "activeUsers", since), 0),
+                "senders": safe(f"{label} chat senders", lambda: ev_metric("chat_sent", "activeUsers", since), 0),
+                "sent": safe(f"{label} chat sent", lambda: ev_metric("chat_sent", "eventCount", since), 0),
+                "byKind": f("chat kind", lambda: brk("customEvent:kind", since, "chat_sent", 6)),
+                "replies": f("chat reply", lambda: brk("customEvent:reply", since, "chat_sent", 3)),
+                "statsViews": f("chat stats views", lambda: brk("customEvent:src", since, "chat_stats_view", 3)),
             }
 
         return {
+            "since": since,
+            # headline counts over the same window as every breakdown below
+            "counts": {
+                "notable": n("notable", "notable_spotted"),
+                "handshakes": next((r["count"] for r in caps if r["name"] == "handshake"), 0),
+                "pmkids": next((r["count"] for r in caps if r["name"] == "pmkid"), 0),
+                "cracked": n("cracked", "capture_cracked", CRACKED_VERSIONS),
+                "drones": n("drones", "drone_detected"),
+                "aircraft": n("aircraft", "notable_aircraft"),
+                "secrets": n("secrets", "secret_unlock"),
+            },
             # user properties → active users per value
-            "adapters": f("adapters", lambda: brk("customUser:adapter", days, limit=8)),
-            "extAdapter": f("ext adapter", lambda: brk("customUser:has_ext_adapter", days, limit=3)),
-            "skins": f("skins", lambda: brk("customUser:skin", days, limit=10)),
-            "darkMap": f("dark map", lambda: brk("customUser:dark_map", days, limit=3)),
-            "uploadTargets": f("upload targets", lambda: brk("customUser:upload_targets", days, limit=8)),
-            "alertsOff": f("alerts off", lambda: brk("customUser:alerts_off", days, limit=12)),
-            # event params → event counts
-            "notable": f("notable", lambda: brk("customEvent:category", days, "notable_spotted", 12)),
-            "aircraft": f("aircraft", lambda: brk("customEvent:category", days, "notable_aircraft", 6)),
-            "drones": f("drones", lambda: brk("customEvent:ua_type", days, "drone_detected", 8)),
-            "tools": f("tools", lambda: brk("customEvent:tool", days, "tool_opened", 10)),
-            "secrets": f("secrets", lambda: brk("customEvent:kind", days, "secret_unlock", 8)),
-            "exportFormats": f("export formats", lambda: brk("customEvent:format", days, "export", 4)),
-            "captureKinds": f("capture kinds", lambda: brk("customEvent:kind", days, "capture", 4)),
-            # the app sends sdr_connected{source}; fall back to a `kind` param if that ever changes
-            "sdr": f("sdr", lambda: brk("customEvent:source", days, "sdr_connected", 6)
-                     or brk("customEvent:kind", days, "sdr_connected", 6)),
-            "uploadsBy": f("uploads by", lambda: brk("customEvent:target", days, "upload", 4)),
-            "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", days, "notif_toggle", 10)),
+            "adapters": f("adapters", lambda: brk("customUser:adapter", since, limit=40)),
+            "skins": f("skins", lambda: brk("customUser:skin", since, limit=20)),
+            "darkMap": f("dark map", lambda: brk("customUser:dark_map", since, limit=3)),
+            "uploadTargets": f("upload targets", lambda: brk("customUser:upload_targets", since, limit=10)),
+            "alertsOff": f("alerts off", lambda: brk("customUser:alerts_off", since, limit=20)),
+            # event params → event counts (SDR → users per radio model)
+            "notable": f("notable", lambda: brk("customEvent:category", since, "notable_spotted", 40)),
+            "aircraft": f("aircraft", lambda: brk("customEvent:category", since, "notable_aircraft", 8)),
+            "drones": f("drones", lambda: brk("customEvent:ua_type", since, "drone_detected", 12)),
+            "tools": f("tools", lambda: brk("customEvent:tool", since, "tool_opened", 40)),
+            "secrets": f("secrets", lambda: brk("customEvent:kind", since, "secret_unlock", 10)),
+            "exportFormats": f("export formats", lambda: brk("customEvent:format", since, "export", 4)),
+            "captureKinds": caps,
+            "sdr": f("sdr", lambda: brk("customEvent:source", since, "sdr_connected", 10, users=True)),
+            "uploadsBy": f("uploads by", lambda: brk("customEvent:target", since, "upload", 4)),
+            "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", since, "notif_toggle", 20)),
             "chat": safe(f"{label} fun chat", chat, {}),
         }
 
@@ -192,7 +222,7 @@ def run():
             out = []
             for x in rows(r):
                 nm = x.dimension_values[0].value
-                out.append({"country": "Unknown" if nm in ("(not set)", "") else nm,
+                out.append({"country": "Not reported" if nm in ("(not set)", "") else nm,
                             "code": x.dimension_values[1].value, "users": int(float(x.metric_values[0].value))})
             return out
 
@@ -271,7 +301,7 @@ def run():
             out = []
             for x in rows(rc):
                 nm = x.dimension_values[0].value
-                out.append({"country": "Unknown" if nm in ("(not set)", "") else nm,
+                out.append({"country": "Not reported" if nm in ("(not set)", "") else nm,
                             "code": x.dimension_values[1].value, "users": int(float(x.metric_values[0].value))})
             return out
         return {"activeUsers": users, "events": evs, "countries": safe("rt countries", rt_countries, [])}
