@@ -155,7 +155,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const titleEnum = (s) => String(s || '').toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const NOTABLE_NAMES = {
   SURVEILLANCE: 'Flock & surveillance cams', TRACKER: 'Trackers', FORENSIC: 'Forensic / IMSI catchers',
-  CCTV: 'CCTV cameras', FLEET: 'Fleet & vehicles', TRAFFIC: 'ALPR cameras', BODYCAM: 'Body cams',
+  CCTV: 'CCTV cameras', FLEET: 'Fleet cams & cellular routers', EMERGENCYVEH: 'Emergency services routers', TRAFFIC: 'ALPR cameras', BODYCAM: 'Body cams',
   DRONE: 'Drones', RFTOOL: 'RF attack tools', HACKTOOL: 'Hacking gadgets', FLIPPER: 'Flipper Zeros',
   GLASSES: 'Smart glasses', ACTIONCAM: 'Action cams', POLICE: 'Two-way radios', POLICERADAR: 'Police radar',
   LIGHTBAR: 'Emergency light bars', GUNSHOT: 'Gunshot sensors', MEDICAL: 'Medical / EMS gear',
