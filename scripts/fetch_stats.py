@@ -146,6 +146,23 @@ def run():
             out.append({"name": v, vk: int(float(x.metric_values[0].value))})
         return out[:limit]
 
+    def devices_brk(start, limit=60):
+        """device_used: active users per (kind, device). Every device the app reports is its own row, and a user
+        with two devices counts once for each. Needs both kind and device registered; otherwise []."""
+        need = ["customEvent:kind", "customEvent:device"]
+        if custom is not None and not all(d in custom for d in need):
+            return []
+        r = report(need, ["activeUsers"], 0, limit=limit, order_metric="activeUsers", start=start,
+                   dim_filter=name_filter("device_used"))
+        out = []
+        for x in rows(r):
+            kind, name = (d.value for d in x.dimension_values)
+            if name in ("(not set)", ""):
+                continue
+            out.append({"kind": kind if kind not in ("(not set)", "") else "other", "name": name,
+                        "users": int(float(x.metric_values[0].value))})
+        return out
+
     def ev_metric(event, metric, start, versions=None):
         r = c.run_report(RunReportRequest(property=p, metrics=[Metric(name=metric)],
             date_ranges=[DateRange(start_date=start, end_date="today")], dimension_filter=no_bots(name_filter(event, versions))))
@@ -202,6 +219,9 @@ def run():
             "captureNew": f("capture new", lambda: brk("customEvent:new", since, "capture", 3)),
             "uploadsBy": f("uploads by", lambda: brk("customEvent:target", since, "upload", 4)),
             "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", since, "notif_toggle", 20)),
+            # device_used → active users per device (with its kind), and distinct users per kind
+            "devices": f("devices", lambda: devices_brk(since, 60)),
+            "deviceKinds": f("device kinds", lambda: brk("customEvent:kind", since, "device_used", 8, users=True)),
             "chat": safe(f"{label} fun chat", chat, {}),
         }
 

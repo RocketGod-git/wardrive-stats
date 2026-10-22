@@ -49,7 +49,7 @@ DIMS = [
     (EVENT, "adapter", "Engaged adapter", "adapter_engaged adapter label"),
     (EVENT, "tool", "Tool", "tool_opened tool name"),
     (EVENT, "tool_ord", "Tool ordinal", "tool_opened tool ordinal"),
-    (EVENT, "kind", "Kind", "kind param: capture / secret_unlock / export / chat_sent"),
+    (EVENT, "kind", "Kind", "kind param: capture / secret_unlock / export / chat_sent / device_used"),
     (EVENT, "skin", "Theme set", "theme_set theme"),
     (EVENT, "format", "Export format", "export file format"),
     (EVENT, "scope", "Export scope", "export time frame"),
@@ -62,6 +62,9 @@ DIMS = [
     (EVENT, "source", "SDR source", "sdr_connected SDR type"),
     (EVENT, "target", "Upload target", "upload service"),
     (EVENT, "new", "Capture new", "capture: yes = first time this phone captured it"),
+    (EVENT, "device", "Device", "device_used device model"),
+    (EVENT, "lang", "App language", "language_set language tag, or system"),
+    (EVENT, "bank", "Export bank", "export: run banked after the export, true or false"),
 ]
 
 SCOPE_NAME = {USER: "USER", EVENT: "EVENT"}

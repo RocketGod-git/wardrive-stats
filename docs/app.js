@@ -194,41 +194,91 @@ const FUN_LABEL = {
 const notReported = (rows, key) => (rows || []).map(r => r[key] === 'Unknown' ? Object.assign({}, r, { [key]: 'Not reported' }) : r);
 
 // Older app versions reported the adapter as a log line ("adapter: none (last engaged: Realtek …", driver names, USB ids)
-// cut at 36 characters. Reduce every value to the chip itself and merge the duplicates; "phone" = no external adapter.
-function adapterName(v) {
+// cut at 36 characters; newer ones join every engaged adapter with " + " (also cut at 36). Each value is split into its
+// adapters and every adapter gets its own row: a user with two adapters counts once for each.
+const SERIAL_BOARD = 'USB serial board (unidentified)';
+const FULL_CHIP = /^(Atheros AR\d{4}|Realtek RTL\d{4}[A-Z]{0,2}|MediaTek MT\d{4}[A-Z]{1,2}|Ralink RT\d{4})$/i;
+const VENDORS = ['Atheros', 'Realtek', 'MediaTek', 'Ralink'];
+// One adapter entry → its Wi-Fi chip; 'phone' = no external adapter; null = not a Wi-Fi adapter (SDR, mesh radio) or a
+// fragment too short to name. [cut] = this entry is the tail of a value cut off at 36 characters.
+function adapterName(v, cut) {
   let s = String(v || '').replace(/^adapter:\s*/i, '').replace(/\uFFFD/g, '·').trim();
   if (/^none/i.test(s)) {
     const m = s.match(/last engaged:\s*(.*)$/i);
     if (!m) return 'phone';
     s = m[1];
   }
-  s = s.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)?/ig, '').replace(/\($/, '').trim();
+  s = s.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)/ig, '').replace(/\s*\([^)]*$/, '').trim();
   const parts = s.split('·').map(x => x.trim()).filter(Boolean);
   if (!parts.length) return 'phone';
   const head = parts[0];
-  // SDRs are not Wi-Fi adapters (older versions listed them here): no Wi-Fi adapter = phone.
-  if (/^(rtl-?sdr|hackrf|portapack|sdr)/i.test(head)) return 'phone';
-  if (/^usb ser/i.test(head) || /^esp32/i.test(head)) return 'ESP32 board';
-  // Values cut off at 36 characters by older versions kept only part of the vendor ("MediaTe", "Realt").
-  // Atheros = the AR9271 (the only Atheros chip supported); the others can't be narrowed to a model.
+  // SDRs and mesh radios share the USB list but aren't Wi-Fi adapters (they're counted under Top devices).
+  if (/^(rtl-?sdr|hackrf|portapack|sdr|nesdr|nooelec|airspy|rad1o|lora|mesh)/i.test(head)) return null;
+  // Raw USB-serial bridges: a board the app hadn't identified yet.
+  if (/^(usb ser|esp32|cp210|ch9102|ch34|ftdi|ft232)/i.test(head)) return SERIAL_BOARD;
   const low = head.toLowerCase();
-  if (low.length >= 3 && 'atheros'.startsWith(low)) return 'Atheros AR9271';
-  for (const v of ['Realtek', 'MediaTek', 'Ralink']) {
-    if (low.length >= 3 && v.toLowerCase().startsWith(low)) return v + ' (model not reported)';
+  // Values cut off at 36 characters kept only part of the name ("MediaTe", "Realtek RTL88"). Atheros = the AR9271 (the
+  // only Atheros chip supported); the others can't be narrowed to a model. Anything else that was cut is dropped.
+  if (cut && FULL_CHIP.test(head)) return head;
+  for (const v of VENDORS) {
+    const vl = v.toLowerCase();
+    if ((low.length >= 3 && vl.startsWith(low)) || (cut && low.startsWith(vl))) return v === 'Atheros' ? 'Atheros AR9271' : v + ' (model not reported)';
   }
-  return head;
+  return cut ? null : head;
+}
+// The set of adapters in one reported value (empty = phone only).
+function rowAdapters(raw) {
+  let s = String(raw || '');
+  let cut = s.length >= 36;
+  // Cut right after a separator ("A + B +"): the last name is whole, only what followed it was lost.
+  if (/\s\+\s*$/.test(s)) { s = s.replace(/\s\+\s*$/, ''); cut = false; }
+  const parts = s.split(' + ');
+  const out = new Set();
+  parts.forEach((p, i) => {
+    const n = adapterName(p, cut && i === parts.length - 1);
+    if (n && n !== 'phone') out.add(n);
+  });
+  return out;
 }
 function adapterRows(rows) {
   const by = {};
-  (rows || []).forEach(r => { const n = adapterName(r.name); by[n] = (by[n] || 0) + (r.users || 0); });
+  (rows || []).forEach(r => {
+    const set = rowAdapters(r.name);
+    (set.size ? [...set] : ['phone']).forEach(n => { by[n] = (by[n] || 0) + (r.users || 0); });
+  });
   return Object.entries(by).map(([name, users]) => ({ name, users })).sort((a, b) => b.users - a.users);
 }
-// External adapter vs phone, from the adapter breakdown (the old has_ext_adapter value only said whether an adapter was
-// receiving at that moment, so it read "phone only" for nearly everyone).
-function extRows(adapters) {
+// External adapter vs phone, from the raw adapter values (the old has_ext_adapter value only said whether an adapter
+// was receiving at that moment, so it read "phone only" for nearly everyone).
+function extRows(rows) {
   let phone = 0, ext = 0;
-  adapters.forEach(r => { if (r.name === 'phone') phone += r.users; else ext += r.users; });
+  (rows || []).forEach(r => { if (rowAdapters(r.name).size) ext += r.users || 0; else phone += r.users || 0; });
   return [{ name: 'true', users: ext }, { name: 'false', users: phone }].filter(r => r.users > 0);
+}
+
+// Top devices: the app's device_used event, one row per device model, grouped by kind.
+const DEVICE_KINDS = [['wifi_adapter', 'Wi-Fi adapters'], ['board', 'WardriveESP boards'], ['biscuit', 'Biscuit'],
+  ['mesh', 'Mesh radios'], ['serial', 'Serial boards'], ['sdr', 'SDRs']];
+function renderDevices(devices, kinds) {
+  const el = $('funDevices'); if (!el) return;
+  const rows = devices || [];
+  if (!rows.length) {
+    el.innerHTML = `<div class="collecting">Collecting — devices show up here as people update the app</div>`;
+    return;
+  }
+  const kindUsers = {};
+  (kinds || []).forEach(k => { kindUsers[k.name] = k.users || 0; });
+  const known = DEVICE_KINDS.map(k => k[0]);
+  const groups = DEVICE_KINDS.concat([...new Set(rows.map(r => r.kind))].filter(k => !known.includes(k)).map(k => [k, titleEnum(k)]));
+  el.innerHTML = groups.filter(([k]) => rows.some(r => r.kind === k)).map(([k, label]) => {
+    const n = kindUsers[k];
+    return `<div class="dev-group"><div class="dev-kind">${esc(label)}${n ? `<span>${fmt(n)} user${n === 1 ? '' : 's'}</span>` : ''}</div>` +
+      `<div class="list" id="funDev_${esc(k)}"></div></div>`;
+  }).join('');
+  groups.forEach(([k]) => {
+    const g = rows.filter(r => r.kind === k).sort((a, b) => (b.users || 0) - (a.users || 0));
+    if (g.length) list($('funDev_' + k), g.map(r => ({ name: esc(r.name), n: r.users })), 'name', 'n');
+  });
 }
 // Screen names: the app names its screens from 3.1.173; older versions report none, so drop those rows.
 function screenRows(rows) {
@@ -280,9 +330,9 @@ function renderFun(f, events) {
     card('Aircraft', fmt(k.aircraft || 0), 'notable, flagged'),
     card('Secret unlocks', fmt(k.secrets || 0), 'codes punched')
   ].join('');
-  const adapters = adapterRows(f.adapters);
-  funList('funAdapters', adapters, 'users', FUN_LABEL.adapter);
-  funDonut('funExtChart', extRows(adapters), 'users', FUN_LABEL.ext);
+  funList('funAdapters', adapterRows(f.adapters), 'users', FUN_LABEL.adapter);
+  funDonut('funExtChart', extRows(f.adapters), 'users', FUN_LABEL.ext);
+  renderDevices(f.devices, f.deviceKinds);
   funList('funNotable', f.notable, 'count', FUN_LABEL.notable);
   funDonut('funAircraftChart', f.aircraft, 'count', FUN_LABEL.aircraft);
   funList('funTools', f.tools, 'count', FUN_LABEL.plain);

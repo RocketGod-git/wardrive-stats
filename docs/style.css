@@ -109,6 +109,10 @@ canvas{max-width:100%}
 .fun-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:8px;padding-top:16px;border-top:1px dashed var(--line)}
 .fun-head h2{color:var(--accent);margin:0}
 .fun-sub{color:var(--muted);font-size:11px}
+.dev-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 26px}
+.dev-groups .collecting{grid-column:1/-1}
+.dev-kind{display:flex;justify-content:space-between;gap:10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}
+.dev-kind span{letter-spacing:0;text-transform:none}
 .collecting{color:var(--muted);font-size:12px;padding:18px 0;text-align:center;opacity:.85}
 .chat-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:10px}
 .chat-stats .mini{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
