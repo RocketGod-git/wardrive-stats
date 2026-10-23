@@ -139,12 +139,19 @@ function buildRangeChips(d) {
 function renderRange() {
   const r = currentRange(), t = r.totals || {};
   const plats = r.platforms || [];
-  const pu = (p) => { const x = plats.find(z => z.platform === p); return x ? fmt(x.users) : '—'; };
+  // A platform GA4 hasn't processed into this window yet (a new app stream takes up to a day) shows its realtime count.
+  const rtPlats = (DATA.realtime || {}).platforms || [];
+  const pcard = (label, p) => {
+    const x = plats.find(z => z.platform === p), live = rtPlats.find(z => z.platform === p);
+    if (x) return card(label, fmt(x.users), 'active users');
+    if (live && live.users) return card(label, fmt(live.users), 'right now');
+    return card(label, '0', 'active users');
+  };
   const newPct = t.active ? Math.round(Math.min(t.newUsers || 0, t.active) / t.active * 100) : null;
   $('cards').innerHTML = [
     card('Active users', fmt(t.active), r.label || '', true),
-    card('Android', pu('Android'), 'active users'),
-    card('iPhone', pu('iOS'), 'active users'),
+    pcard('Android', 'Android'),
+    pcard('iPhone', 'iOS'),
     card('New users', fmt(t.newUsers), newPct != null ? `${newPct}% of active` : ''),
     card('Sessions', fmt(t.sessions), t.engagementRate != null ? `${t.engagementRate}% engaged` : ''),
     card('Time in app', fmtDur(t.avgEngagementSec), 'per user')
