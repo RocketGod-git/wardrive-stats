@@ -9,6 +9,11 @@ const fmtDur = (s) => (!s ? '—' : s >= 3600 ? `${Math.floor(s/3600)}h ${Math.r
 const show = (id) => { const e = $(id); if (e) e.style.display = ''; };
 const hide = (id) => { const e = $(id); if (e) e.style.display = 'none'; };
 
+// The realtime list shows what people do in the app, not GA4's own bookkeeping (engagement pings, session and screen
+// views, OS/app updates, cleared data, crashes, uninstalls), the app's version heartbeat or settings switches.
+const EVENT_HIDE = new Set(['user_engagement', 'session_start', 'screen_view', 'app_version_active', 'os_update',
+  'app_update', 'app_clear_data', 'app_exception', 'app_remove', 'language_set', 'notif_toggle', 'chat_stats_view']);
+
 const LABELS = {
   notable_spotted: 'Notable devices spotted', notable_aircraft: 'Notable aircraft', drone_detected: 'Remote ID drones',
   capture: 'Captures', capture_cracked: 'Passwords cracked', upload: 'Uploads',
@@ -16,7 +21,8 @@ const LABELS = {
   language_set: 'Language changed', export: 'Data exports', tool_opened: 'Tools opened', secret_unlock: 'Secret unlocks',
   app_version_active: 'Active app versions', session_start: 'Sessions started', screen_view: 'Screens viewed',
   user_engagement: 'User engagement', first_open: 'New installs', app_update: 'App updated', app_remove: 'Uninstalls',
-  os_update: 'OS updated', app_exception: 'Crashes', app_clear_data: 'Data cleared'
+  os_update: 'OS updated', app_exception: 'Crashes', app_clear_data: 'Data cleared', device_used: 'Gear connected',
+  theme_set: 'Themes changed', chat_opened: 'Chatroom visits', chat_sent: 'Chat messages'
 };
 const pretty = (name) => LABELS[name] || String(name || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -80,7 +86,7 @@ function legacyRange(d) {   // backward-compat for the pre-"ranges" schema (brie
       newUsers: (d.totals28d || {}).newUsers, engagementMinutes: (d.totals28d || {}).engagementMinutes },
     newReturning: d.newReturning || {}, events: d.events28d || [], countries: d.countries || [], cities: [],
     versions: d.versions || [], devices: d.devices || [], android: d.android || [], languages: [],
-    hours: d.hours || [], weekdays: d.weekdays || [], screens: d.screens || [], timeseries: d.timeseries || [] };
+    hours: d.hours || [], weekdays: d.weekdays || [], timeseries: d.timeseries || [] };
 }
 function currentRange() {
   if (DATA.ranges) {
@@ -100,9 +106,20 @@ function render(d) {
   renderRange();
 }
 
+// GA4 reports the platform as Android / iOS; the page says iPhone.
+const PLATFORM_ORDER = ['Android', 'iOS'];
+const platName = (p) => p === 'iOS' ? 'iPhone' : (p || 'Other');
+function platChips(rows) {
+  return PLATFORM_ORDER.map(p => {
+    const n = ((rows || []).find(r => r.platform === p) || {}).users || 0;
+    return `<span class="plat-chip ${p === 'iOS' ? 'ios' : 'android'}"><span class="d"></span>${platName(p)} <b>${fmt(n)}</b></span>`;
+  }).join('');
+}
+
 function renderRealtime(rt) {
   $('rtUsers').textContent = fmt(rt.activeUsers);
-  const evs = rt.events || [];
+  $('rtPlatforms').innerHTML = rt.platforms ? platChips(rt.platforms) : '';
+  const evs = (rt.events || []).filter(e => !EVENT_HIDE.has(e.name)).slice(0, 10);
   const emax = Math.max(...evs.map(e => e.count || 0), 1);
   $('rtEvents').innerHTML = evs.map(e => `
     <div class="evrow"><div style="flex:1">
@@ -121,29 +138,44 @@ function buildRangeChips(d) {
 
 function renderRange() {
   const r = currentRange(), t = r.totals || {};
-  $('rangeTitle').textContent = (r.label || '28 days');
+  const plats = r.platforms || [];
+  const pu = (p) => { const x = plats.find(z => z.platform === p); return x ? fmt(x.users) : '—'; };
+  const newPct = t.active ? Math.round(Math.min(t.newUsers || 0, t.active) / t.active * 100) : null;
   $('cards').innerHTML = [
-    card('Active users', fmt(t.active), 'in range', true),
-    card('Events', fmt(t.events), ''),
-    card('Sessions', fmt(t.sessions), ''),
-    card('New users', fmt(t.newUsers), ''),
-    card('Avg engagement', fmtDur(t.avgEngagementSec), 'per user'),
-    card('Events / session', t.eventsPerSession != null ? t.eventsPerSession : '—', ''),
-    card('Engaged', t.engagementRate != null ? t.engagementRate + '%' : '—', 'sessions'),
-    card('Engagement', fmt(t.engagementMinutes), 'minutes')
+    card('Active users', fmt(t.active), r.label || '', true),
+    card('Android', pu('Android'), 'active users'),
+    card('iPhone', pu('iOS'), 'active users'),
+    card('New users', fmt(t.newUsers), newPct != null ? `${newPct}% of active` : ''),
+    card('Sessions', fmt(t.sessions), t.engagementRate != null ? `${t.engagementRate}% engaged` : ''),
+    card('Time in app', fmtDur(t.avgEngagementSec), 'per user')
   ].join('');
   drawGlobe(r.countries || []);
-  drawEvents(r.events || []);
   if ((r.timeseries || []).length) { show('tsPanel'); drawTimeseries(r.timeseries); } else hide('tsPanel');
-  drawHours(r.hours || []); drawDow(r.weekdays || []); drawNewReturning(r.totals || {});
-  list($('screens'), screenRows(r.screens), 'name', 'views');
-  list($('versions'), r.versions, 'version', 'users');
-  list($('countries'), notReported(r.countries, 'country'), 'country', 'users');
+  drawHours(r.hours || []); drawDow(r.weekdays || []);
+  list($('countries'), notReported(r.countries, 'country').slice(0, 15), 'country', 'users');
   list($('cities'), (r.cities || []).filter(c => c.city !== 'Not reported' && c.city !== 'Unknown'), 'city', 'users');
-  list($('devices'), r.devices, 'model', 'users');
-  list($('android'), r.android, 'os', 'users');
   list($('languages'), r.languages, 'language', 'users');
-  renderFun(r.fun || {}, r.events || []);
+  drawPlatforms(plats);
+  // Snapshots from before the platform split carry plain lists; show them as Android-only until the next fetch.
+  platGroups('versions', r.versions, 'version');
+  platGroups('phones', r.phones || r.devices, 'model');
+  platGroups('os', r.os || r.android, 'os');
+  renderFun(r.fun || {});
+}
+
+// One list per platform (Android first), each with its own scale.
+function platGroups(id, rows, key) {
+  const el = $(id); if (!el) return;
+  const all = (rows || []).map(x => x.platform ? x : Object.assign({ platform: 'Android' }, x));
+  const groups = PLATFORM_ORDER.filter(p => all.some(x => x.platform === p));
+  if (!groups.length) { el.innerHTML = `<div class="collecting">${COLLECTING}</div>`; return; }
+  el.innerHTML = groups.map(p => `<div class="plat-group"><div class="dev-kind ${p === 'iOS' ? 'ios' : 'android'}">${platName(p)}</div><div class="list" id="${id}_${p}"></div></div>`).join('');
+  groups.forEach(p => list($(`${id}_${p}`), all.filter(x => x.platform === p).map(x => ({ name: esc(x[key]), n: x.users })), 'name', 'n'));
+}
+function drawPlatforms(plats) {
+  const rows = PLATFORM_ORDER.map(p => ({ name: platName(p), users: ((plats || []).find(z => z.platform === p) || {}).users || 0 }))
+    .filter(r => r.users > 0);
+  funDonut('platChart', rows, 'users', null, ['#3ddc84', '#d6dde0']);
 }
 
 // ---- Fun data: breakdowns by the app's CUSTOM dimensions (user properties + event params) ----
@@ -165,28 +197,19 @@ const NOTABLE_NAMES = {
 };
 const AIRCRAFT_NAMES = { EMERGENCY: 'Emergency squawks', SPECIAL: 'Special (VIP, blimps, display teams)',
   MILITARY: 'Military', POLICE: 'Police / government', MEDEVAC: 'Medevac' };
-// Alert-switch ids (Settings › Notable alerts): a notable category name, or one of these, or AIRCRAFT_<class>.
-const NOTIF_NAMES = Object.assign({}, NOTABLE_NAMES, { FINDMY_APPLE: 'Apple Find My', FINDMY_GOOGLE: 'Google Find My',
-  REMOTEID_DRONE: 'Remote ID drones' });
 const SKIN_NAMES = { TPP: "The Pirates' Plunder", WIGLE: 'WiGLE', WDGWARS: 'WDGWars', BBS: 'BBS', PRO: 'PRO',
   PACMAN: 'Pac-Man', SONAR_BLUE: 'Sonar Blue' };
 const TARGET_NAMES = { wigle: 'WiGLE', wdgw: 'WDGWars', wardrift: 'Wardrift' };
 const SECRET_NAMES = { theme: 'Secret themes', admin: 'Admin console', wpasec: 'WPA-SEC mode', peen: 'PEEN mode',
-  boobs: 'BOOBS', chat: 'Chatroom' };
+  boobs: 'BOOBS', chat: 'Chatroom', wardrift: 'Wardrift' };
 const lookup = (map) => (v) => map[v] || map[String(v).toUpperCase()] || map[String(v).toLowerCase()] || titleEnum(v);
 const FUN_LABEL = {
   notable: lookup(NOTABLE_NAMES), aircraft: lookup(AIRCRAFT_NAMES), skin: lookup(SKIN_NAMES), secret: lookup(SECRET_NAMES),
   target: lookup(TARGET_NAMES),
-  notif: (v) => /^AIRCRAFT_/i.test(v) ? 'Aircraft · ' + lookup(AIRCRAFT_NAMES)(String(v).slice(9)) : lookup(NOTIF_NAMES)(v),
   targets: (v) => v === 'none' ? 'None (no uploads)' : String(v).split('+').map(lookup(TARGET_NAMES)).join(' + '),
   ext: (v) => (v === 'true' || v === 'yes') ? 'External adapter' : (v === 'false' || v === 'no') ? 'Phone radio only' : v,
-  dark: (v) => v === 'on' ? 'Dark map' : v === 'off' ? 'Light map' : v,
   capture: (v) => ({ handshake: '4-way handshakes', pmkid: 'PMKIDs' }[v] || titleEnum(v)),
-  format: (v) => ({ CSV: 'CSV', GZIP: 'CSV.gz', ZIP: 'ZIP' }[v] || v),
-  alerts: (v) => v === '0' ? 'None — all alerts on' : v === '5' ? '5 (app default)' : `${v} switch${v === '1' ? '' : 'es'} off`,
   adapter: (v) => v === 'phone' ? 'Phone only (no adapter)' : v,
-  // Sticks that don't report "Blog V3/V4" over USB (older V3s and clones) arrive as plain "RTL-SDR".
-  sdr: (v) => v === 'RTL-SDR' ? 'RTL-SDR (model not reported)' : v,
   // tool / SDR / drone labels arrive human-readable; only SHOUTY_SNAKE enum values get title-cased
   plain: (v) => v === 'unknown' ? 'Unknown' : (/_/.test(v) && /^[A-Z0-9_]+$/.test(v) ? titleEnum(v) : v)
 };
@@ -256,12 +279,14 @@ function extRows(rows) {
   return [{ name: 'true', users: ext }, { name: 'false', users: phone }].filter(r => r.users > 0);
 }
 
-// Top devices: the app's device_used event, one row per device model, grouped by kind.
-const DEVICE_KINDS = [['wifi_adapter', 'Wi-Fi adapters'], ['board', 'WardriveESP boards'], ['biscuit', 'Biscuit'],
-  ['mesh', 'Mesh radios'], ['serial', 'Serial boards'], ['sdr', 'SDRs']];
+// Gear: the app's device_used event, one row per device model, grouped by kind.
+// Wi-Fi adapters have their own panel (from the adapter property, which every app version reports), so they're left
+// out here.
+const DEVICE_KINDS = [['board', 'WardriveESP boards'], ['biscuit', 'Biscuit'], ['mesh', 'Mesh radios'],
+  ['sdr', 'SDRs'], ['serial', 'Serial boards']];
 function renderDevices(devices, kinds) {
   const el = $('funDevices'); if (!el) return;
-  const rows = devices || [];
+  const rows = (devices || []).filter(r => r.kind !== 'wifi_adapter');
   if (!rows.length) {
     el.innerHTML = `<div class="collecting">Collecting — devices show up here as people update the app</div>`;
     return;
@@ -280,24 +305,18 @@ function renderDevices(devices, kinds) {
     if (g.length) list($('funDev_' + k), g.map(r => ({ name: esc(r.name), n: r.users })), 'name', 'n');
   });
 }
-// Screen names: the app names its screens from 3.1.173; older versions report none, so drop those rows.
-function screenRows(rows) {
-  return (rows || []).filter(r => r.name && r.name !== 'Unknown' && r.name !== 'Not reported' && r.name !== '(not set)')
-    .map(r => Object.assign({}, r, { name: String(r.name).replace(/([a-z])([A-Z])/g, '$1 $2') }));
-}
-
-// Settings the app reports from 3.1.168 on: say how many users that covers, so a small total reads right.
+// Settings only newer app versions report: say how many users that covers, so a small total reads right.
 function coverage(id, rows) {
   const el = $(id); if (!el) return;
   const n = (rows || []).reduce((s, r) => s + (r.users || 0), 0);
-  el.textContent = n ? `${fmt(n)} user${n === 1 ? '' : 's'} on app 3.1.168+ report this` : '';
+  el.textContent = n ? `${fmt(n)} user${n === 1 ? '' : 's'} reporting` : '';
 }
 function funList(id, rows, countKey, labelFn, unit) {
   const el = $(id); if (!el) return;
   if (!rows || !rows.length) { el.innerHTML = `<div class="collecting">${COLLECTING}</div>`; return; }
   list(el, rows.map(r => ({ name: esc(labelFn ? labelFn(r.name) : r.name), n: r[countKey] })), 'name', 'n', unit);
 }
-function funDonut(id, rows, countKey, labelFn) {
+function funDonut(id, rows, countKey, labelFn, colors) {
   const c = $(id); if (!c) return;
   const box = c.parentElement, empty = box.nextElementSibling;
   if (!rows || !rows.length) {
@@ -308,61 +327,47 @@ function funDonut(id, rows, countKey, labelFn) {
   box.style.display = ''; if (empty) empty.style.display = 'none';
   mkChart(id, { type: 'doughnut',
     data: { labels: rows.map(r => labelFn ? labelFn(r.name) : r.name), datasets: [{ data: rows.map(r => r[countKey] || 0),
-      backgroundColor: rows.map((_, i) => FUN_COLORS[i % FUN_COLORS.length]), borderColor: '#0e1619', borderWidth: 3 }] },
+      backgroundColor: rows.map((_, i) => (colors || FUN_COLORS)[i % (colors || FUN_COLORS).length]), borderColor: '#0e1619', borderWidth: 3 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } } });
 }
-function renderFun(f, events) {
+function renderFun(f) {
   const k = f.counts || {};
-  // Headline counts cover the selected range; the per-type breakdowns only exist from the day their fields were
-  // registered, so say so when the range starts earlier.
-  const sinceEl = $('funSince');
-  if (sinceEl) {
-    const since = f.since ? new Date(f.since + 'T12:00:00') : null;
-    const clipped = f.since && f.rangeStart && f.since > f.rangeStart;
-    sinceEl.textContent = clipped && !isNaN(since)
-      ? '· breakdowns since ' + since.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-  }
-  $('funCards').innerHTML = [
+  $('findCards').innerHTML = [
     card('Notable devices', fmt(k.notable || 0), 'spotted', true),
     card('Captures', fmt(k.captures || 0), 'handshakes + PMKIDs'),
-    card('Passwords', fmt(k.cracked || 0), 'cracked'),
+    card('Cracked', fmt(k.cracked || 0), 'Wi-Fi passwords'),
     card('Drones', fmt(k.drones || 0), 'Remote ID'),
-    card('Aircraft', fmt(k.aircraft || 0), 'notable, flagged'),
-    card('Secret unlocks', fmt(k.secrets || 0), 'codes punched')
+    card('Aircraft', fmt(k.aircraft || 0), 'notable, flagged')
   ].join('');
-  funList('funAdapters', adapterRows(f.adapters), 'users', FUN_LABEL.adapter);
-  funDonut('funExtChart', extRows(f.adapters), 'users', FUN_LABEL.ext);
-  renderDevices(f.devices, f.deviceKinds);
   funList('funNotable', f.notable, 'count', FUN_LABEL.notable);
-  funDonut('funAircraftChart', f.aircraft, 'count', FUN_LABEL.aircraft);
-  funList('funTools', f.tools, 'count', FUN_LABEL.plain);
-  funList('funSkins', f.skins, 'users', FUN_LABEL.skin); coverage('covSkins', f.skins);
-  funList('funDrones', f.drones, 'count', FUN_LABEL.plain);
   funDonut('funCaptureChart', f.captureKinds, 'count', FUN_LABEL.capture);
-  funDonut('funCaptureNewChart', f.captureNew, 'count', (v) => v === 'yes' ? 'New to that phone' : v === 'no' ? 'Seen again' : v);
+  const fresh = (f.captureNew || []).find(r => r.name === 'yes'), capAll = (f.captureNew || []).reduce((s, r) => s + (r.count || 0), 0);
+  $('covCaptures').textContent = fresh && capAll ? `${Math.round(fresh.count / capAll * 100)}% were new to that phone` : '';
+  funDonut('funAircraftChart', f.aircraft, 'count', FUN_LABEL.aircraft);
+  funList('funDrones', f.drones, 'count', FUN_LABEL.plain);
+
+  funDonut('funExtChart', extRows(f.adapters), 'users', FUN_LABEL.ext);
+  funList('funAdapters', adapterRows(f.adapters).filter(r => r.name !== 'phone'), 'users', FUN_LABEL.adapter);
+  renderDevices(f.devices, f.deviceKinds);
+
+  funList('funTools', f.tools, 'count', FUN_LABEL.plain);
+  funList('funSkins', (f.skins || []).slice(0, 12), 'users', FUN_LABEL.skin); coverage('covSkins', f.skins);
   funList('funTargets', f.uploadTargets, 'users', FUN_LABEL.targets); coverage('covTargets', f.uploadTargets);
   funDonut('funUploadsChart', f.uploadsBy, 'count', FUN_LABEL.target);
-  funDonut('funDarkChart', f.darkMap, 'users', FUN_LABEL.dark); coverage('covDark', f.darkMap);
-  funDonut('funExportChart', f.exportFormats, 'count', FUN_LABEL.format);
-  funList('funNotif', f.notifToggles, 'count', FUN_LABEL.notif);
-  funList('funAlertsOff', (f.alertsOff || []).slice().sort((a, b) => (parseInt(a.name, 10) || 0) - (parseInt(b.name, 10) || 0)), 'users', FUN_LABEL.alerts); coverage('covAlerts', f.alertsOff);
-  funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
-  funList('funSdr', f.sdr, f.sdr && f.sdr[0] && f.sdr[0].count != null ? 'count' : 'users', FUN_LABEL.sdr);
+
   renderChat(f.chat || {});
+  funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
 }
 function renderChat(ch) {
   const el = $('funChat'); if (!el) return;
-  const kinds = ch.byKind || [], replies = ch.replies || [], views = ch.statsViews || [];
+  const kinds = ch.byKind || [];
   if (!ch.openedUsers && !ch.sent && !kinds.length) { el.innerHTML = `<div class="collecting">${COLLECTING}</div>`; return; }
-  const rTrue = (replies.find(r => r.name === 'true') || {}).count || 0;
-  const rAll = replies.reduce((s, r) => s + (r.count || 0), 0);
+  const photos = (kinds.find(r => r.name === 'photo') || {}).count || 0;
   const mini = (k, v) => `<div class="mini"><div class="k">${k}</div><div class="v">${v}</div></div>`;
   el.innerHTML = `<div class="chat-stats">${[
     mini('Dropped in', fmt(ch.openedUsers || 0)), mini('Chatters', fmt(ch.senders || 0)),
-    mini('Messages', fmt(ch.sent || 0)), mini('Replies', rAll ? Math.round(rTrue / rAll * 100) + '%' : '—'),
-    ...views.map(v => mini(`${esc(lookup(TARGET_NAMES)(v.name))} views`, fmt(v.count)))
-  ].join('')}</div><div class="list" id="funChatKinds"></div>`;
-  if (kinds.length) funList('funChatKinds', kinds, 'count', (v) => titleEnum(v));
+    mini('Messages', fmt(ch.sent || 0)), mini('Photos', fmt(photos))
+  ].join('')}</div>`;
 }
 
 // ---- charts (destroy-before-recreate so range switches + polls don't leak or collide) ----
@@ -382,17 +387,6 @@ function drawTimeseries(tsIn) {
       plugins: { legend: { labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 10 } } },
       scales: { x: baseAxis(), y: baseAxis({ position: 'left' }), y1: baseAxis({ position: 'right', grid: { drawOnChartArea: false, color: GRID } }) } } });
 }
-// The EVENTS chart shows what people do in the app. Left out: GA4's own bookkeeping (engagement pings, session and
-// screen views, OS/app updates, cleared data, crashes), the app's version heartbeat, and uploads (only counted
-// from app 3.1.173, so a range total would be wrong).
-const EVENT_HIDE = new Set(['user_engagement', 'session_start', 'screen_view', 'app_version_active', 'os_update',
-  'app_update', 'app_clear_data', 'app_exception', 'language_set', 'upload']);
-function drawEvents(evs) {
-  const top = evs.filter(e => !EVENT_HIDE.has(e.name)).slice(0, 12);
-  mkChart('evChart', { type: 'bar',
-    data: { labels: top.map(e => pretty(e.name)), datasets: [{ data: top.map(e => e.count), backgroundColor: top.map((_, i) => i === 0 ? ACCENT : 'rgba(22,192,255,.55)'), borderRadius: 5 }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
-}
 function drawHours(hours) {
   const peak = Math.max(...hours.map(h => h.users), 1);
   mkChart('hourChart', { type: 'bar',
@@ -405,15 +399,6 @@ function drawDow(wd) {
     data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users), backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
 }
-// New = first opened the app in this range; returning = first opened before it. Both from the range totals, so the
-// two always add up to ACTIVE USERS (GA4's newVsReturning counts someone twice if they were new, then came back).
-function drawNewReturning(t) {
-  const fresh = Math.min(t.newUsers || 0, t.active || 0), back = Math.max(0, (t.active || 0) - fresh);
-  mkChart('nrChart', { type: 'doughnut',
-    data: { labels: ['New users', 'Returning'], datasets: [{ data: [fresh, back], backgroundColor: [ACCENT, 'rgba(22,192,255,.55)'], borderColor: '#0e1619', borderWidth: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: MUTED, font: { family: 'JetBrains Mono', size: 11 }, boxWidth: 10, padding: 12 } } } } });
-}
-
 // ---- globe: country borders + choropleth + floating live numbers ----
 let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LALT = 2.3, NUM_POOL = [], NUM_RAF = null, GLOBE_NUM_OV = null, RINGS_READY = false;
 // Dot size (globe-degrees) by magnitude — small + constant across zoom. Dots are real 3D objects, so the globe

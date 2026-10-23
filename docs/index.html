@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wardrive Go · Live Stats</title>
-<meta name="description" content="Live global stats for the Wardrive Go wardriving app — a glowing worldwide globe, realtime activity, and 90 days of usage. Aggregate & anonymous.">
+<meta name="description" content="Live global stats for the Wardrive Go wardriving app on Android and iPhone — a glowing worldwide globe, realtime activity, and 90 days of usage. Aggregate & anonymous.">
 <meta name="theme-color" content="#19e0b4">
 <link rel="canonical" href="https://rocketgod.dev/wardrive-stats/">
 <!-- Rich link previews (Discord, Twitter/X, Slack, iMessage, …) -->
@@ -24,30 +24,38 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=26">
+<link rel="stylesheet" href="style.css?v=27">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
-  // "Get it on Google Play" button is pointless — they already have the app. Website visitors never carry either.
+  // store buttons are pointless — they already have the app. Website visitors never carry either.
   (function () {
     var q = new URLSearchParams(location.search);
     if (q.has('inapp') || q.has('t')) document.documentElement.classList.add('inapp');
   })();
 </script>
-<style>.inapp #playBtn{display:none!important}</style>
+<style>.inapp .store-btns{display:none!important}</style>
 </head>
 <body>
 <header>
-  <div>
+  <div class="brand">
     <div class="logo"><span class="b">WARDRIVE</span> GO · STATS</div>
-    <div class="tagline">aggregate · anonymous · auto-refreshed</div>
+    <div class="tagline">Android + iPhone · anonymous · live</div>
   </div>
   <div class="spacer"></div>
-  <button id="secretPill" class="secret-pill" title="shhh…">🔓 secret codes</button>
-  <a id="playBtn" class="play-btn" href="https://play.google.com/store/apps/details?id=com.rocketgod.wardrive" target="_blank" rel="noopener">
-    <span class="play-tri">▶</span><span class="play-txt"><b>Get Wardrive Go</b><br>on Google Play</span>
-  </a>
-  <div id="sampleBadge" class="sample-badge" style="display:none">SAMPLE DATA</div>
-  <div class="stamp"><span class="dot"></span><span id="stamp">loading…</span></div>
+  <div class="head-tools">
+    <button id="secretPill" class="secret-pill" title="shhh…">🔓 secret codes</button>
+    <div id="sampleBadge" class="sample-badge" style="display:none">SAMPLE DATA</div>
+    <div class="stamp"><span class="dot"></span><span id="stamp">loading…</span></div>
+  </div>
+  <div class="store-btns">
+    <a class="store-btn" href="https://play.google.com/store/apps/details?id=com.rocketgod.wardrive" target="_blank" rel="noopener">
+      <span class="store-ic">▶</span><span class="store-txt">Get it on<br><b>Google Play</b></span>
+    </a>
+    <a class="store-btn" href="https://apps.apple.com/app/wardrive-go/id6783390938" target="_blank" rel="noopener">
+      <svg class="store-ic" viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+      <span class="store-txt">Download on the<br><b>App Store</b></span>
+    </a>
+  </div>
 </header>
 
 <div id="content" style="display:none">
@@ -55,7 +63,8 @@
   <section>
     <div class="realtime">
       <h2 style="color:var(--accent)">⚡ Realtime · last 30 min</h2>
-      <div class="rt-top"><span class="big" id="rtUsers">—</span><span class="lbl">active users right now</span></div>
+      <div class="rt-top"><span class="big" id="rtUsers">—</span><span class="lbl">wardrivers in the app right now</span></div>
+      <div class="plat-chips" id="rtPlatforms"></div>
       <div class="evlist" id="rtEvents"></div>
     </div>
   </section>
@@ -63,106 +72,90 @@
   <!-- Range selector -->
   <section>
     <div class="rangebar">
-      <span class="rangebar-lbl">Window:</span>
+      <span class="rangebar-lbl">Window</span>
       <span id="rangeSel" class="rangebar-chips"></span>
-      <span class="spacer"></span>
-      <span class="rangebar-cur" id="rangeTitle">28 days</span>
     </div>
   </section>
 
   <!-- Globe -->
   <section>
     <div class="panel globe-panel">
-      <h2>🌍 Wardrive Go wardrivers · active users</h2>
+      <h2>🌍 Wardrivers worldwide · active users</h2>
       <div id="globe"></div>
       <div id="globeLegend" class="globe-legend"></div>
     </div>
   </section>
 
-  <!-- Headline cards -->
+  <!-- Audience -->
+  <div class="cat-head"><h2>👥 Audience</h2></div>
   <section class="grid cards" id="cards"></section>
-
-  <!-- Trend + events -->
+  <section>
+    <div class="panel" id="tsPanel"><h2>Daily active users &amp; notable finds</h2><div class="chartbox"><canvas id="tsChart"></canvas></div></div>
+  </section>
   <section class="two">
-    <div class="panel" id="tsPanel"><h2>Activity trend</h2><div class="chartbox"><canvas id="tsChart"></canvas></div></div>
-    <div class="panel"><h2>Events</h2><div class="chartbox"><canvas id="evChart"></canvas></div></div>
+    <div class="panel"><h2>Busiest hour · UTC</h2><div class="chartbox short"><canvas id="hourChart"></canvas></div></div>
+    <div class="panel"><h2>Busiest day</h2><div class="chartbox short"><canvas id="dowChart"></canvas></div></div>
   </section>
 
-  <!-- Rhythm -->
-  <section class="two">
-    <div class="panel"><h2>Busiest hour · UTC</h2><div class="chartbox"><canvas id="hourChart"></canvas></div></div>
-    <div class="panel"><h2>Busiest day</h2><div class="chartbox"><canvas id="dowChart"></canvas></div></div>
-  </section>
-
-  <!-- Screens + audience -->
-  <section class="two">
-    <div class="panel"><h2>Top screens</h2><div class="list" id="screens"></div></div>
-    <div class="panel"><h2>New vs returning</h2><div class="chartbox"><canvas id="nrChart"></canvas></div></div>
-  </section>
-
-  <!-- Geography -->
+  <!-- Where -->
+  <div class="cat-head"><h2>📍 Where</h2></div>
   <section class="two">
     <div class="panel"><h2>Countries</h2><div class="list" id="countries"></div></div>
-    <div class="panel"><h2>Cities</h2><div class="list" id="cities"></div></div>
-  </section>
-
-  <!-- Fleet -->
-  <section class="two">
-    <div class="panel"><h2>App versions</h2><div class="list" id="versions"></div></div>
-    <div class="panel"><h2>Languages</h2><div class="list" id="languages"></div></div>
-  </section>
-  <section class="two">
-    <div class="panel"><h2>Top devices</h2><div class="list" id="devices"></div></div>
-    <div class="panel"><h2>Android version</h2><div class="list" id="android"></div></div>
-  </section>
-
-  <!-- Fun data — breakdowns by the app's custom dimensions (adapters, themes, finds, tools…). Empty cards show
-       a "no data" placeholder. -->
-  <section>
-    <div class="fun-head">
-      <h2>🎲 Fun data</h2>
-      <span class="fun-sub">what wardrivers run, find &amp; tweak <span id="funSince"></span></span>
+    <div class="stack">
+      <div class="panel"><h2>Cities</h2><div class="list" id="cities"></div></div>
+      <div class="panel"><h2>Languages</h2><div class="list" id="languages"></div></div>
     </div>
   </section>
-  <section class="grid cards" id="funCards"></section>
+
+  <!-- Phones & app -->
+  <div class="cat-head"><h2>📱 Phones &amp; app</h2></div>
   <section class="two">
-    <div class="panel"><h2>Top Wi-Fi adapters</h2><div class="list" id="funAdapters"></div></div>
-    <div class="panel"><h2>External adapter vs phone</h2><div class="chartbox"><canvas id="funExtChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+    <div class="panel"><h2>Android vs iPhone</h2><div class="chartbox"><canvas id="platChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+    <div class="panel"><h2>App versions</h2><div class="plat-groups" id="versions"></div></div>
   </section>
-  <section>
-    <div class="panel"><h2>Top devices</h2><div class="dev-groups" id="funDevices"></div></div>
+  <section class="two">
+    <div class="panel"><h2>Phones</h2><div class="plat-groups" id="phones"></div></div>
+    <div class="panel"><h2>OS versions</h2><div class="plat-groups" id="os"></div></div>
   </section>
+
+  <!-- Finds -->
+  <div class="cat-head"><h2>📡 Finds</h2></div>
+  <section class="grid cards" id="findCards"></section>
   <section class="two">
     <div class="panel"><h2>Most-spotted notable devices</h2><div class="list" id="funNotable"></div></div>
-    <div class="panel"><h2>Notable aircraft</h2><div class="chartbox"><canvas id="funAircraftChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+    <div class="stack">
+      <div class="panel"><h2>Captures</h2><div class="cover" id="covCaptures"></div><div class="chartbox short"><canvas id="funCaptureChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+      <div class="panel"><h2>Notable aircraft</h2><div class="chartbox short"><canvas id="funAircraftChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+      <div class="panel"><h2>Remote ID drones by type</h2><div class="list" id="funDrones"></div></div>
+    </div>
   </section>
+
+  <!-- Gear -->
+  <div class="cat-head"><h2>🧰 Gear</h2></div>
+  <section class="two">
+    <div class="panel"><h2>Phone radio vs external adapter</h2><div class="chartbox"><canvas id="funExtChart"></canvas></div><div class="collecting" style="display:none"></div></div>
+    <div class="panel"><h2>Wi-Fi adapters</h2><div class="list" id="funAdapters"></div></div>
+  </section>
+  <section>
+    <div class="panel"><h2>Boards, Biscuits, mesh radios &amp; SDRs</h2><div class="dev-groups" id="funDevices"></div></div>
+  </section>
+
+  <!-- Tools & settings -->
+  <div class="cat-head"><h2>🛠 Tools &amp; settings</h2></div>
   <section class="two">
     <div class="panel"><h2>Most-used tools</h2><div class="list" id="funTools"></div></div>
     <div class="panel"><h2>Favorite themes</h2><div class="cover" id="covSkins"></div><div class="list" id="funSkins"></div></div>
   </section>
   <section class="two">
-    <div class="panel"><h2>Remote ID drones by type</h2><div class="list" id="funDrones"></div></div>
-    <div class="panel"><h2>Captures · handshakes vs PMKIDs</h2><div class="chartbox"><canvas id="funCaptureChart"></canvas></div><div class="collecting" style="display:none"></div></div>
-    <div class="panel"><h2>Captures · new vs seen again</h2><div class="chartbox"><canvas id="funCaptureNewChart"></canvas></div><div class="collecting" style="display:none"></div></div>
-  </section>
-  <section class="two">
-    <div class="panel"><h2>Upload targets enabled</h2><div class="cover" id="covTargets"></div><div class="list" id="funTargets"></div></div>
+    <div class="panel"><h2>Upload targets turned on</h2><div class="cover" id="covTargets"></div><div class="list" id="funTargets"></div></div>
     <div class="panel"><h2>Uploads by service</h2><div class="chartbox"><canvas id="funUploadsChart"></canvas></div><div class="collecting" style="display:none"></div></div>
   </section>
+
+  <!-- Community -->
+  <div class="cat-head"><h2>💬 Community</h2></div>
   <section class="two">
-    <div class="panel"><h2>Dark map vs light map</h2><div class="cover" id="covDark"></div><div class="chartbox"><canvas id="funDarkChart"></canvas></div><div class="collecting" style="display:none"></div></div>
-    <div class="panel"><h2>Export formats</h2><div class="chartbox"><canvas id="funExportChart"></canvas></div><div class="collecting" style="display:none"></div></div>
-  </section>
-  <section class="two">
-    <div class="panel"><h2>Most-toggled alert categories</h2><div class="list" id="funNotif"></div></div>
-    <div class="panel"><h2>Alert switches turned off</h2><div class="cover" id="covAlerts"></div><div class="list" id="funAlertsOff"></div></div>
-  </section>
-  <section class="two">
-    <div class="panel"><h2>Secret unlocks</h2><div class="list" id="funSecrets"></div></div>
-    <div class="panel"><h2>SDR connections by model</h2><div class="list" id="funSdr"></div></div>
-  </section>
-  <section>
     <div class="panel"><h2>Chatroom</h2><div id="funChat"></div></div>
+    <div class="panel"><h2>Secret codes punched</h2><div class="list" id="funSecrets"></div></div>
   </section>
 </div>
 
@@ -176,7 +169,11 @@
       <button id="secretClose" class="modal-x" aria-label="close">✕</button>
     </div>
     <p class="modal-intro">In the app, <b>tap the top header 6 times</b> to summon the code pad, then punch in a
-      5-digit code.</p>
+      5-digit code. Works on Android and iPhone.</p>
+    <div class="code-row">
+      <span class="code">09270</span>
+      <div><div class="code-name">WARDRIFT</div><div class="code-desc">Adds the Wardrift tool to the console: your rank, the outpost map, and sieges on the towers and keeps your drives opened up.</div></div>
+    </div>
     <div class="code-row">
       <span class="code">69420</span>
       <div><div class="code-name">WPA-SEC MODE</div><div class="code-desc">Auto-sends your captured handshakes &amp; PMKIDs to the wpa-sec crack pool.</div></div>
@@ -199,6 +196,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

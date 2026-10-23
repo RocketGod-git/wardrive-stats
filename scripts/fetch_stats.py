@@ -6,8 +6,8 @@ service-account JSON is injected at runtime via GA4_SA (a GitHub Actions secret)
 GA4_PROPERTY_ID.
 
 Produces a REALTIME block (last 30 min) plus a `ranges` map — 24 hours / 7 / 28 / 90 days — each with the full
-aggregate set (active users, totals + engagement quality, events, countries, cities, devices, OS, languages,
-new-vs-returning, hour-of-day, day-of-week, top screens, and a daily timeseries) plus a `fun` block of breakdowns
+aggregate set (active users, totals + engagement quality, Android vs iOS, events, countries, cities, phones, OS,
+app versions, languages, hour-of-day, day-of-week and a daily timeseries) plus a `fun` block of breakdowns
 by the app's CUSTOM dimensions (adapters, themes, notable categories, tools, …; registered once by
 scripts/register_dims.py — unregistered ones just come back empty). The dashboard switches between them
 client-side. Only AGGREGATE, non-PII dimensions are queried. Every report is isolated in safe() so one failure
@@ -119,6 +119,33 @@ def run():
             out.append({key: v, vk: int(float(x.metric_values[0].value))})
         return out
 
+    def plat(v):
+        return {"android": "Android", "ios": "iOS"}.get((v or "").lower(), v or "Other")
+
+    def plat_lst(dims, key, days, limit=8, fetch=40):
+        """Active users per (platform, value), merged by value within each platform. With two value dims the
+        first one that is set wins (phone marketing name, falling back to the raw model)."""
+        r = report(["platform"] + dims, ["activeUsers"], days, limit=fetch, order_metric="activeUsers")
+        by = {}
+        for x in rows(r):
+            vals = [d.value for d in x.dimension_values]
+            pf = plat(vals[0])
+            v = next((z for z in vals[1:] if z not in ("(not set)", "")), "Not reported")
+            by[(pf, v)] = by.get((pf, v), 0) + int(float(x.metric_values[0].value))
+        out = [{"platform": pf, key: v, "users": u} for (pf, v), u in by.items()]
+        out.sort(key=lambda z: -z["users"])
+        kept, seen = [], {}
+        for z in out:
+            if seen.get(z["platform"], 0) < limit:
+                kept.append(z)
+                seen[z["platform"]] = seen.get(z["platform"], 0) + 1
+        return kept
+
+    def platforms(days):
+        r = report(["platform"], ["activeUsers", "newUsers"], days, limit=5, order_metric="activeUsers")
+        return [{"platform": plat(x.dimension_values[0].value), "users": int(float(x.metric_values[0].value)),
+                 "newUsers": int(float(x.metric_values[1].value))} for x in rows(r)]
+
     # ---- "Fun data": CUSTOM dimensions (app user properties + event params; registered by register_dims.py) ----
     # Ask GA4 once which custom dimensions exist, so unregistered ones are skipped quietly instead of erroring on
     # every run. If the metadata call itself fails (None), every query is attempted — safe() still absorbs failures.
@@ -204,21 +231,16 @@ def run():
             # user properties → active users per value
             "adapters": f("adapters", lambda: brk("customUser:adapter", since, limit=40)),
             "skins": f("skins", lambda: brk("customUser:skin", since, limit=20)),
-            "darkMap": f("dark map", lambda: brk("customUser:dark_map", since, limit=3)),
             "uploadTargets": f("upload targets", lambda: brk("customUser:upload_targets", since, limit=10)),
-            "alertsOff": f("alerts off", lambda: brk("customUser:alerts_off", since, limit=20)),
-            # event params → event counts (SDR → users per radio model)
+            # event params → event counts
             "notable": f("notable", lambda: brk("customEvent:category", since, "notable_spotted", 40)),
             "aircraft": f("aircraft", lambda: brk("customEvent:category", since, "notable_aircraft", 8)),
             "drones": f("drones", lambda: brk("customEvent:ua_type", since, "drone_detected", 12)),
             "tools": f("tools", lambda: brk("customEvent:tool", since, "tool_opened", 40)),
             "secrets": f("secrets", lambda: brk("customEvent:kind", since, "secret_unlock", 10)),
-            "exportFormats": f("export formats", lambda: brk("customEvent:format", since, "export", 4)),
             "captureKinds": f("capture kinds", lambda: brk("customEvent:kind", since, "capture", 4)),
-            "sdr": f("sdr", lambda: brk("customEvent:source", since, "sdr_connected", 10)),
             "captureNew": f("capture new", lambda: brk("customEvent:new", since, "capture", 3)),
             "uploadsBy": f("uploads by", lambda: brk("customEvent:target", since, "upload", 4)),
-            "notifToggles": f("notif toggles", lambda: brk("customEvent:cat", since, "notif_toggle", 20)),
             # device_used → active users per device (with its kind), and distinct users per kind
             "devices": f("devices", lambda: devices_brk(since, 60)),
             "deviceKinds": f("device kinds", lambda: brk("customEvent:kind", since, "device_used", 8, users=True)),
@@ -305,13 +327,13 @@ def run():
             "events": safe(f"{label} events", events, []),
             "countries": safe(f"{label} countries", countries, []),
             "cities": safe(f"{label} cities", lambda: lst("city", "city", days, 8), []),
-            "versions": safe(f"{label} versions", lambda: lst("appVersion", "version", days, 6), []),
-            "devices": safe(f"{label} devices", lambda: lst("deviceModel", "model", days, 6), []),
-            "android": safe(f"{label} android", lambda: lst("operatingSystemWithVersion", "os", days, 6), []),
-            "languages": safe(f"{label} languages", lambda: lst("language", "language", days, 6), []),
+            "platforms": safe(f"{label} platforms", lambda: platforms(days), []),
+            "versions": safe(f"{label} versions", lambda: plat_lst(["appVersion"], "version", days, 6), []),
+            "phones": safe(f"{label} phones", lambda: plat_lst(["mobileDeviceMarketingName", "deviceModel"], "model", days, 8, 60), []),
+            "os": safe(f"{label} os", lambda: plat_lst(["operatingSystemWithVersion"], "os", days, 6), []),
+            "languages": safe(f"{label} languages", lambda: lst("language", "language", days, 8), []),
             "hours": safe(f"{label} hours", hours, []),
             "weekdays": safe(f"{label} weekdays", weekdays, []),
-            "screens": safe(f"{label} screens", lambda: lst("unifiedScreenName", "name", days, 8, "screenPageViews", "views"), []),
             "timeseries": safe(f"{label} ts", timeseries, []),
             "fun": safe(f"{label} fun", lambda: fun_block(days, label), {}),
         }
@@ -322,7 +344,7 @@ def run():
         users = int(float(ru.rows[0].metric_values[0].value)) if ru.rows else 0
         re = c.run_realtime_report(RunRealtimeReportRequest(property=p,
             dimensions=[Dimension(name="eventName")], metrics=[Metric(name="eventCount")],
-            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="eventCount"), desc=True)], limit=14))
+            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="eventCount"), desc=True)], limit=24))
         evs = [{"name": x.dimension_values[0].value, "count": int(float(x.metric_values[0].value))} for x in rows(re)]
 
         def rt_countries():
@@ -335,7 +357,13 @@ def run():
                 out.append({"country": "Not reported" if nm in ("(not set)", "") else nm,
                             "code": x.dimension_values[1].value, "users": int(float(x.metric_values[0].value))})
             return out
-        return {"activeUsers": users, "events": evs, "countries": safe("rt countries", rt_countries, [])}
+        def rt_platforms():
+            rp = c.run_realtime_report(RunRealtimeReportRequest(property=p,
+                dimensions=[Dimension(name="platform")], metrics=[Metric(name="activeUsers")], limit=5))
+            return [{"platform": plat(x.dimension_values[0].value), "users": int(float(x.metric_values[0].value))}
+                    for x in rows(rp)]
+        return {"activeUsers": users, "events": evs, "countries": safe("rt countries", rt_countries, []),
+                "platforms": safe("rt platforms", rt_platforms, [])}
 
     out = {
         "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
