@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=28">
+<link rel="stylesheet" href="style.css?v=29">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
   // store buttons are pointless — they already have the app. Website visitors never carry either.
@@ -63,8 +63,7 @@
   <section>
     <div class="realtime">
       <h2 style="color:var(--accent)">⚡ Realtime · last 30 min</h2>
-      <div class="rt-top"><span class="big" id="rtUsers">—</span><span class="lbl">wardrivers in the app right now</span></div>
-      <div class="rt-plats" id="rtPlatforms"></div>
+      <div class="rt-hero" id="rtHero"></div>
       <div class="evlist" id="rtEvents"></div>
     </div>
   </section>
@@ -196,6 +195,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=32"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>

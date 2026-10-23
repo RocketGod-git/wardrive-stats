@@ -116,18 +116,24 @@ const PLAT_ICON = {
 };
 // iPhones report from app 2.15, the first iOS version with analytics.
 const PLAT_SINCE = { iOS: 'app 2.15+' };
-function platTiles(rows) {
-  return PLATFORM_ORDER.map(p => {
-    const n = ((rows || []).find(r => r.platform === p) || {}).users || 0;
-    const cls = p === 'iOS' ? 'ios' : 'android';
-    return `<div class="rt-plat ${cls}"><svg viewBox="0 0 24 24" aria-hidden="true">${PLAT_ICON[p]}</svg>` +
-      `<div><div class="n">${fmt(n)}</div><div class="l">${platName(p)}${PLAT_SINCE[p] ? `<span>${PLAT_SINCE[p]}</span>` : ''}</div></div></div>`;
+// Realtime hero: the live total, then one tile per platform with its share of who's in the app right now.
+function rtHero(total, rows) {
+  const counts = PLATFORM_ORDER.map(p => ((rows || []).find(r => r.platform === p) || {}).users || 0);
+  const sum = counts.reduce((a, b) => a + b, 0);
+  const tiles = PLATFORM_ORDER.map((p, i) => {
+    const n = counts[i], pct = sum ? Math.round(n / sum * 100) : 0;
+    return `<div class="rt-plat ${p === 'iOS' ? 'ios' : 'android'}">` +
+      (PLAT_SINCE[p] ? `<span class="since">${PLAT_SINCE[p]}</span>` : '') +
+      `<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${PLAT_ICON[p]}</svg></span>` +
+      `<div class="body"><div class="n">${fmt(n)}</div><div class="l">${platName(p)}<b>${pct}%</b></div>` +
+      `<div class="share"><i style="width:${pct}%"></i></div></div></div>`;
   }).join('');
+  return `<div class="rt-total"><div class="live"><span class="dot"></span>LIVE NOW</div>` +
+    `<div class="n">${fmt(total)}</div><div class="l">wardrivers in the app</div></div>` + tiles;
 }
 
 function renderRealtime(rt) {
-  $('rtUsers').textContent = fmt(rt.activeUsers);
-  $('rtPlatforms').innerHTML = rt.platforms ? platTiles(rt.platforms) : '';
+  $('rtHero').innerHTML = rtHero(rt.activeUsers, rt.platforms);
   const evs = (rt.events || []).filter(e => !EVENT_HIDE.has(e.name)).slice(0, 10);
   const emax = Math.max(...evs.map(e => e.count || 0), 1);
   $('rtEvents').innerHTML = evs.map(e => `
