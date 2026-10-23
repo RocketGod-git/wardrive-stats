@@ -122,6 +122,16 @@ canvas{max-width:100%}
 .plat-chip.android .d{background:#3ddc84}
 .plat-chip.ios .d{background:#d6dde0}
 .plat-group + .plat-group{margin-top:14px}
+.rt-plats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.rt-plat{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.rt-plat svg{width:34px;height:34px;flex:none;fill:currentColor}
+.rt-plat.android{color:#3ddc84}
+.rt-plat.ios{color:#d6dde0}
+.rt-plat .n{font-size:30px;font-weight:800;line-height:1;color:var(--ink)}
+.rt-plat .l{font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt-plat .l span{display:block;color:var(--muted);letter-spacing:0;text-transform:none;margin-top:2px}
+.globe-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.globe-head h2{margin:0}
 .dev-kind.android{color:#3ddc84}
 .dev-kind.ios{color:#d6dde0}
 .dev-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 26px}
@@ -153,6 +163,9 @@ footer{color:var(--muted);font-size:11px;text-align:center;margin:26px 0 6px}
   .cards .card:last-child:nth-child(odd){grid-column:1/-1}
   .panel{padding:14px}
   .rt-top .big{font-size:34px}
+  .rt-plat{padding:10px 12px;gap:10px}
+  .rt-plat svg{width:28px;height:28px}
+  .rt-plat .n{font-size:26px}
   .list .row .track{width:56px}
   .list .row{font-size:12px}
   .cat-head{margin-top:24px}

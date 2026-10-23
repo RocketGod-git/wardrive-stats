@@ -109,16 +109,25 @@ function render(d) {
 // GA4 reports the platform as Android / iOS; the page says iPhone.
 const PLATFORM_ORDER = ['Android', 'iOS'];
 const platName = (p) => p === 'iOS' ? 'iPhone' : (p || 'Other');
-function platChips(rows) {
+// The same phone icons as the app's Boards screen (Material android / phone_iphone).
+const PLAT_ICON = {
+  Android: '<path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24c-2.86-1.21-6.08-1.21-8.94 0L5.65 5.67c-.19-.29-.58-.38-.87-.2-.28.18-.37.54-.22.83L6.4 9.48C3.3 11.25 1.28 14.44 1 18h22c-.28-3.56-2.3-6.75-5.4-8.52zM7 15.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25zm10 0c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/>',
+  iOS: '<path d="M15.5 1h-8C6.12 1 5 2.12 5 3.5v17C5 21.88 6.12 23 7.5 23h8c1.38 0 2.5-1.12 2.5-2.5v-17C18 2.12 16.88 1 15.5 1zm-4 21c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5-4H7V4h9v14z"/>'
+};
+// iPhones report from app 2.15, the first iOS version with analytics.
+const PLAT_SINCE = { iOS: 'app 2.15+' };
+function platTiles(rows) {
   return PLATFORM_ORDER.map(p => {
     const n = ((rows || []).find(r => r.platform === p) || {}).users || 0;
-    return `<span class="plat-chip ${p === 'iOS' ? 'ios' : 'android'}"><span class="d"></span>${platName(p)} <b>${fmt(n)}</b></span>`;
+    const cls = p === 'iOS' ? 'ios' : 'android';
+    return `<div class="rt-plat ${cls}"><svg viewBox="0 0 24 24" aria-hidden="true">${PLAT_ICON[p]}</svg>` +
+      `<div><div class="n">${fmt(n)}</div><div class="l">${platName(p)}${PLAT_SINCE[p] ? `<span>${PLAT_SINCE[p]}</span>` : ''}</div></div></div>`;
   }).join('');
 }
 
 function renderRealtime(rt) {
   $('rtUsers').textContent = fmt(rt.activeUsers);
-  $('rtPlatforms').innerHTML = rt.platforms ? platChips(rt.platforms) : '';
+  $('rtPlatforms').innerHTML = rt.platforms ? platTiles(rt.platforms) : '';
   const evs = (rt.events || []).filter(e => !EVENT_HIDE.has(e.name)).slice(0, 10);
   const emax = Math.max(...evs.map(e => e.count || 0), 1);
   $('rtEvents').innerHTML = evs.map(e => `
@@ -156,7 +165,7 @@ function renderRange() {
     card('Sessions', fmt(t.sessions), t.engagementRate != null ? `${t.engagementRate}% engaged` : ''),
     card('Time in app', fmtDur(t.avgEngagementSec), 'per user')
   ].join('');
-  drawGlobe(r.countries || []);
+  renderGlobe();
   if ((r.timeseries || []).length) { show('tsPanel'); drawTimeseries(r.timeseries); } else hide('tsPanel');
   drawHours(r.hours || []); drawDow(r.weekdays || []);
   list($('countries'), notReported(r.countries, 'country').slice(0, 15), 'country', 'users');
@@ -406,6 +415,24 @@ function drawDow(wd) {
     data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users), backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
 }
+// The globe shows who's in the app right now (default) or the selected window; the choice is remembered.
+let GLOBE_MODE = 'live';
+try { GLOBE_MODE = localStorage.getItem('globeMode') || 'live'; } catch (e) {}
+function renderGlobe() {
+  const live = GLOBE_MODE === 'live', r = currentRange();
+  const el = $('globeSel');
+  if (el) {
+    el.innerHTML = [['live', 'Live'], ['range', r.label || '28 days']].map(([k, lbl]) =>
+      `<button class="rchip${(k === 'live') === live ? ' on' : ''}" data-g="${k}">${lbl}</button>`).join('');
+    el.querySelectorAll('.rchip').forEach(b => b.onclick = () => {
+      GLOBE_MODE = b.dataset.g;
+      try { localStorage.setItem('globeMode', GLOBE_MODE); } catch (e) {}
+      renderGlobe();
+    });
+  }
+  drawGlobe(live ? ((DATA.realtime || {}).countries || []) : (r.countries || []));
+}
+
 // ---- globe: country borders + choropleth + floating live numbers ----
 let GLOBE, GEO, ALL_LABELS = [], LABEL_MAX = 1, LALT = 2.3, NUM_POOL = [], NUM_RAF = null, GLOBE_NUM_OV = null, RINGS_READY = false;
 // Dot size (globe-degrees) by magnitude — small + constant across zoom. Dots are real 3D objects, so the globe
