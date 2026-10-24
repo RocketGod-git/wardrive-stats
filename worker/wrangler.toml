@@ -1,0 +1,12 @@
+name = "wardrive-stats-live"
+main = "live.js"
+compatibility_date = "2026-10-01"
+
+# Served under the dashboard's own path, so the page fetches it same-origin.
+routes = [
+  { pattern = "rocketgod.dev/wardrive-stats/api/*", zone_name = "rocketgod.dev" }
+]
+
+# Secrets (set once, never committed):
+#   npx wrangler secret put GA4_SA            (paste the service-account JSON)
+#   npx wrangler secret put GA4_PROPERTY_ID   (the numeric GA4 property id)

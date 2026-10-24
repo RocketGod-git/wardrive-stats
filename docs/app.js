@@ -97,11 +97,13 @@ function currentRange() {
 }
 
 function render(d) {
+  const live = LIVE_OK && DATA ? DATA.realtime : null;   // keep the fresher Worker realtime over the snapshot's
   DATA = d;
+  if (live) DATA.realtime = live;
   $('content').style.display = '';
-  $('stamp').textContent = 'updated ' + ago(d.generatedAt);
+  $('stamp').textContent = LIVE_OK ? 'live' : 'updated ' + ago(d.generatedAt);
   $('sampleBadge').style.display = d.sample ? '' : 'none';
-  renderRealtime(d.realtime || {});
+  renderRealtime(DATA.realtime || {});
   buildRangeChips(d);
   renderRange();
 }
@@ -562,7 +564,30 @@ function load() {
     });
 }
 load();
-setInterval(load, 90000);   // semi-live: re-poll the static JSON every 90s (no GA4 cost)
+setInterval(load, 90000);   // re-poll the static JSON every 90s (no GA4 cost)
+
+// Realtime comes from the Cloudflare Worker (GA4 Realtime API, cached ~15 s at the edge); the snapshot's realtime
+// block is the fallback when it can't be reached (e.g. the github.io mirror before the Worker is deployed).
+const LIVE_URL = 'https://rocketgod.dev/wardrive-stats/api/live';
+let LIVE_OK = false;
+function pollLive() {
+  fetch(LIVE_URL + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(rt => {
+      if (!rt || rt.error || !DATA) return;
+      LIVE_OK = true;
+      DATA.realtime = rt;
+      renderRealtime(rt);
+      if (GLOBE_MODE === 'live') renderGlobe();
+      $('stamp').textContent = 'live';
+    })
+    .catch(() => {
+      if (LIVE_OK && DATA) $('stamp').textContent = 'updated ' + ago(DATA.generatedAt);
+      LIVE_OK = false;
+    });
+}
+pollLive();
+setInterval(pollLive, 15000);
 
 // ---- secret-codes modal ----
 (function () {
