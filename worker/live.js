@@ -1,7 +1,8 @@
 // Live realtime stats for the dashboard: GA4 Realtime API, cached ~15 s so any number of viewers costs one set of
 // GA4 calls per window. Secrets (Cloudflare Worker secrets, never in this repo): GA4_SA = the service-account JSON,
 // GA4_PROPERTY_ID = the numeric property id. Returns the same shape as stats.json's `realtime` block.
-const TTL_S = 15;
+const TTL_S = 30;
+const STALE_S = 86400;   // last good answer, served (marked stale) when GA4 says no (quota) or errors
 const SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
 
 let token = null, tokenExp = 0;
@@ -40,6 +41,17 @@ async function realtime(env, tok, body) {
   return (await r.json()).rows || [];
 }
 
+async function realtimeRaw(env, tok, body) {
+  const pid = String(env.GA4_PROPERTY_ID).replace('properties/', '').trim();
+  const r = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${pid}:runRealtimeReport`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`realtime ${r.status}`);
+  return r.json();
+}
+
 const num = (v) => Math.round(Number(v) || 0);
 const desc = (metricName) => [{ metric: { metricName }, desc: true }];
 const platform = (v) => ({ android: 'Android', ios: 'iOS' }[String(v).toLowerCase()] || v || 'Other');
@@ -47,21 +59,30 @@ const platform = (v) => ({ android: 'Android', ios: 'iOS' }[String(v).toLowerCas
 async function build(env) {
   const sa = JSON.parse(env.GA4_SA);
   const tok = await accessToken(sa);
-  const [total, events, countries, platforms] = await Promise.all([
-    realtime(env, tok, { metrics: [{ name: 'activeUsers' }] }),
+  // Two realtime calls per refresh (GA4's realtime quota is per hour): one country x platform report with a TOTAL row
+  // gives the live total, the country list and the platform split; the other gives the events.
+  const [geo, events] = await Promise.all([
+    realtimeRaw(env, tok, { dimensions: [{ name: 'country' }, { name: 'countryId' }, { name: 'platform' }],
+      metrics: [{ name: 'activeUsers' }], metricAggregations: ['TOTAL'], limit: 250 }),
     realtime(env, tok, { dimensions: [{ name: 'eventName' }], metrics: [{ name: 'eventCount' }], orderBys: desc('eventCount'), limit: 24 }),
-    realtime(env, tok, { dimensions: [{ name: 'country' }, { name: 'countryId' }], metrics: [{ name: 'activeUsers' }], orderBys: desc('activeUsers'), limit: 40 }),
-    realtime(env, tok, { dimensions: [{ name: 'platform' }], metrics: [{ name: 'activeUsers' }], limit: 5 }),
   ]);
+  const byCountry = new Map(), byPlatform = new Map();
+  for (const x of geo.rows || []) {
+    const nm = x.dimensionValues[0].value, cc = x.dimensionValues[1].value, pl = platform(x.dimensionValues[2].value);
+    const u = num(x.metricValues[0].value);
+    const key = nm === '(not set)' || !nm ? 'Not reported' : nm;
+    const c = byCountry.get(key) || { country: key, code: cc, users: 0 };
+    c.users += u; byCountry.set(key, c);
+    byPlatform.set(pl, (byPlatform.get(pl) || 0) + u);
+  }
+  const total = (geo.totals && geo.totals[0]) ? num(geo.totals[0].metricValues[0].value)
+    : [...byCountry.values()].reduce((a, c) => a + c.users, 0);
   return {
     generatedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-    activeUsers: total[0] ? num(total[0].metricValues[0].value) : 0,
+    activeUsers: total,
     events: events.map((x) => ({ name: x.dimensionValues[0].value, count: num(x.metricValues[0].value) })),
-    countries: countries.map((x) => {
-      const nm = x.dimensionValues[0].value;
-      return { country: nm === '(not set)' || !nm ? 'Not reported' : nm, code: x.dimensionValues[1].value, users: num(x.metricValues[0].value) };
-    }),
-    platforms: platforms.map((x) => ({ platform: platform(x.dimensionValues[0].value), users: num(x.metricValues[0].value) })),
+    countries: [...byCountry.values()].sort((a, b) => b.users - a.users).slice(0, 40),
+    platforms: [...byPlatform.entries()].map(([p, users]) => ({ platform: p, users })).sort((a, b) => b.users - a.users),
   };
 }
 
@@ -74,6 +95,7 @@ export default {
     if (!url.pathname.endsWith('/api/live')) return new Response('not found', { status: 404, headers: CORS });
     const cache = caches.default;
     const key = new Request(`${url.origin}${url.pathname}`, { method: 'GET' });
+    const staleKey = new Request(`${url.origin}${url.pathname}?stale=1`, { method: 'GET' });
     const hit = await cache.match(key);
     if (hit) return hit;
     try {
@@ -82,8 +104,20 @@ export default {
         headers: { ...CORS, 'content-type': 'application/json', 'cache-control': `public, max-age=${TTL_S}` },
       });
       ctx.waitUntil(cache.put(key, res.clone()));
+      ctx.waitUntil(cache.put(staleKey, new Response(body, {
+        headers: { 'content-type': 'application/json', 'cache-control': `public, max-age=${STALE_S}` } })));
       return res;
     } catch (e) {
+      // GA4 refused (quota) or failed: hand back the last good answer instead of an error, and don't ask again for a bit.
+      const old = await cache.match(staleKey);
+      if (old) {
+        const j = await old.json();
+        j.stale = true;
+        const res = new Response(JSON.stringify(j), {
+          headers: { ...CORS, 'content-type': 'application/json', 'cache-control': `public, max-age=${TTL_S}` } });
+        ctx.waitUntil(cache.put(key, res.clone()));
+        return res;
+      }
       return new Response(JSON.stringify({ error: String(e.message || e) }), {
         status: 502, headers: { ...CORS, 'content-type': 'application/json', 'cache-control': 'no-store' },
       });

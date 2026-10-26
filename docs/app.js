@@ -78,10 +78,12 @@ function list(el, rows, nameKey, countKey, unit) {
 }
 
 // ---- state ----
-// One time filter for the whole page. 'live' = the globe shows who's in the app right now, the cards show the last 24 h.
-let DATA = null, RANGE = 'live';
-try { RANGE = localStorage.getItem('statsRange') || 'live'; } catch (e) {}
-const RANGE_ORDER = [['live', 'Live'], ['1d', '24h'], ['7d', '7 days'], ['28d', '28 days'], ['90d', '90 days']];
+// The Window filter under the globe drives every section below it (default 90 days). The globe has its own picker.
+let DATA = null, RANGE = '90d';
+try { RANGE = localStorage.getItem('statsWindow') || '90d'; } catch (e) {}
+let GLOBE_WIN = 'live';
+try { GLOBE_WIN = localStorage.getItem('globeWindow') || 'live'; } catch (e) {}
+const RANGE_ORDER = [['1d', '24h'], ['7d', '7 days'], ['28d', '28 days'], ['90d', '90 days']];
 
 function legacyRange(d) {   // backward-compat for the pre-"ranges" schema (brief deploy gap)
   return { totals: { active: (d.active || {}).d28, events: (d.totals28d || {}).events, sessions: (d.totals28d || {}).sessions,
@@ -92,7 +94,6 @@ function legacyRange(d) {   // backward-compat for the pre-"ranges" schema (brie
 }
 function currentRange() {
   if (DATA.ranges) {
-    if (RANGE === 'live') return DATA.ranges['1d'] || DATA.ranges['28d'] || {};
     if (!DATA.ranges[RANGE]) RANGE = DATA.ranges['28d'] ? '28d' : Object.keys(DATA.ranges)[0];
     return DATA.ranges[RANGE] || {};
   }
@@ -126,11 +127,11 @@ function rtHero(total, rows) {
   const counts = PLATFORM_ORDER.map(p => ((rows || []).find(r => r.platform === p) || {}).users || 0);
   const sum = counts.reduce((a, b) => a + b, 0);
   const tiles = PLATFORM_ORDER.map((p, i) => {
-    const n = counts[i], pct = sum ? Math.round(n / sum * 100) : 0;
+    const n = counts[i], pct = sum ? Math.round(n / sum * 100) : 0, unknown = !sum && total > 0;
     return `<div class="rt-plat ${p === 'iOS' ? 'ios' : 'android'}">` +
       (PLAT_SINCE[p] ? `<span class="since">${PLAT_SINCE[p]}</span>` : '') +
       `<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${PLAT_ICON[p]}</svg></span>` +
-      `<div class="body"><div class="n">${fmt(n)}</div><div class="l">${platName(p)}<b>${pct}%</b></div>` +
+      `<div class="body"><div class="n">${unknown ? '—' : fmt(n)}</div><div class="l">${platName(p)}<b>${unknown ? '' : pct + '%'}</b></div>` +
       `<div class="share"><i style="width:${pct}%"></i></div></div></div>`;
   }).join('');
   return `<div class="rt-total"><div class="live"><span class="dot"></span>LIVE NOW</div>` +
@@ -150,19 +151,19 @@ function renderRealtime(rt) {
 function buildRangeChips(d) {
   const el = $('rangeSel');
   if (!d.ranges) { el.innerHTML = ''; return; }
-  const avail = RANGE_ORDER.filter(([k]) => k === 'live' || d.ranges[k]);
-  if (!avail.some(([k]) => k === RANGE)) RANGE = 'live';
+  const avail = RANGE_ORDER.filter(([k]) => d.ranges[k]);
+  if (!avail.some(([k]) => k === RANGE)) RANGE = d.ranges['90d'] ? '90d' : (avail[avail.length - 1] || ['28d'])[0];
   el.innerHTML = avail.map(([k, lbl]) => `<button class="rchip${k === RANGE ? ' on' : ''}" data-r="${k}">${lbl}</button>`).join('');
   el.querySelectorAll('.rchip').forEach(b => b.onclick = () => {
     RANGE = b.dataset.r;
-    try { localStorage.setItem('statsRange', RANGE); } catch (e) {}
+    try { localStorage.setItem('statsWindow', RANGE); } catch (e) {}
     buildRangeChips(DATA); renderRange();
   });
 }
 
 // Every section below the globe uses the Window filter: each section header says which window it shows.
 function windowLabel() {
-  return RANGE === 'live' ? 'last 24h' : ((RANGE_ORDER.find(([k]) => k === RANGE) || [])[1] || '');
+  return (RANGE_ORDER.find(([k]) => k === RANGE) || [])[1] || '';
 }
 function renderRange() {
   const r = currentRange(), t = r.totals || {};
@@ -488,12 +489,21 @@ function drawDow(wd) {
     data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users), backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
 }
-// The globe follows the page's one time filter: Live = who's in the app right now, otherwise the selected window.
+// The globe's own picker: Live (default, who's in the app right now) or any window; remembered.
 function renderGlobe() {
-  const live = RANGE === 'live', r = currentRange();
+  const ranges = DATA.ranges || {};
+  const opts = [['live', 'Live']].concat(RANGE_ORDER.filter(([k]) => ranges[k]));
+  if (!opts.some(([k]) => k === GLOBE_WIN)) GLOBE_WIN = 'live';
   const el = $('globeSel');
-  if (el) el.textContent = live ? '● live' : ((RANGE_ORDER.find(([k]) => k === RANGE) || [])[1] || '');
-  drawGlobe(live ? ((DATA.realtime || {}).countries || []) : (r.countries || []));
+  if (el) {
+    el.innerHTML = opts.map(([k, lbl]) => `<button class="rchip${k === GLOBE_WIN ? ' on' : ''}" data-g="${k}">${lbl}</button>`).join('');
+    el.querySelectorAll('.rchip').forEach(b => b.onclick = () => {
+      GLOBE_WIN = b.dataset.g;
+      try { localStorage.setItem('globeWindow', GLOBE_WIN); } catch (e) {}
+      renderGlobe();
+    });
+  }
+  drawGlobe(GLOBE_WIN === 'live' ? ((DATA.realtime || {}).countries || []) : ((ranges[GLOBE_WIN] || {}).countries || []));
 }
 
 // ---- globe: country borders + choropleth + floating live numbers ----
@@ -633,7 +643,7 @@ function pollLive() {
       LIVE_OK = true;
       DATA.realtime = rt;
       renderRealtime(rt);
-      if (RANGE === 'live') renderGlobe();
+      if (GLOBE_WIN === 'live') renderGlobe();
       $('stamp').textContent = 'live';
     })
     .catch(() => {

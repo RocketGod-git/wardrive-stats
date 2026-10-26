@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=33">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
   // store buttons are pointless — they already have the app. Website visitors never carry either.
@@ -68,20 +68,20 @@
     </div>
   </section>
 
+  <!-- Globe -->
+  <section>
+    <div class="panel globe-panel">
+      <div class="globe-head"><h2>🌍 Wardrivers worldwide</h2><span class="rangebar-chips" id="globeSel"></span></div>
+      <div id="globe"></div>
+      <div id="globeLegend" class="globe-legend"></div>
+    </div>
+  </section>
+
   <!-- Range selector -->
   <section>
     <div class="rangebar">
       <span class="rangebar-lbl">Window</span>
       <span id="rangeSel" class="rangebar-chips"></span>
-    </div>
-  </section>
-
-  <!-- Globe -->
-  <section>
-    <div class="panel globe-panel">
-      <div class="globe-head"><h2>🌍 Wardrivers worldwide</h2><span class="globe-mode" id="globeSel"></span></div>
-      <div id="globe"></div>
-      <div id="globeLegend" class="globe-legend"></div>
     </div>
   </section>
 
@@ -226,6 +226,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=37"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
