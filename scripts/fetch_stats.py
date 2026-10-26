@@ -9,8 +9,9 @@ Produces a REALTIME block (last 30 min) plus a `ranges` map — 24 hours / 7 / 2
 aggregate set (active users, totals + engagement quality, Android vs iOS, events, countries, cities, phones, OS,
 app versions, languages, hour-of-day, day-of-week and a daily timeseries) plus a `fun` block of breakdowns
 by the app's CUSTOM dimensions (adapters, themes, notable categories, tools, …; registered once by
-scripts/register_dims.py — unregistered ones just come back empty). The dashboard switches between them
-client-side. Only AGGREGATE, non-PII dimensions are queried. Every report is isolated in safe() so one failure
+scripts/register_dims.py — unregistered ones just come back empty), including a "wild" block of notable finds by
+GA4's coarse IP-based city (adult toys, cop gear, surveillance, hacking gadgets, drones, captures by country). The
+dashboard switches between them client-side. Only AGGREGATE, non-PII dimensions are queried. Every report is isolated in safe() so one failure
 can't sink the file.
 """
 import json
@@ -34,6 +35,18 @@ FUN_SINCE = date(2026, 10, 18)
 # models showed up as ~1,400 one-visit "users" with no city or in Google data-center cities. Every query excludes them.
 # (The app turns analytics off on Test Lab devices from 3.1.177.)
 BOT_DEVICE_MODELS = ["OnePlus8Pro", "sdk_gphone16k_arm64"]
+
+# "Wild" cards: notable finds grouped by the app's NotableCategory names. Cities are GA4's own coarse city from the
+# phone's IP address; the app never sends a location.
+TOY_CATS = ["ADULTTOY"]
+COP_CATS = ["BODYCAM", "POLICERADAR", "LIGHTBAR", "EMERGENCYVEH"]   # EMERGENCYVEH = police / fire / EMS routers
+RADIO_CATS = ["POLICE"]   # Motorola two-way radios: generic (police, fire, EMS, transit, school buses), kept apart
+EYE_CATS = ["SURVEILLANCE", "TRAFFIC", "GUNSHOT", "FORENSIC"]      # Flock, ALPR, gunshot sensors, IMSI catchers
+HACK_CATS = ["FLIPPER", "HACKTOOL", "RFTOOL"]
+WILD_CATS = TOY_CATS + COP_CATS + RADIO_CATS + EYE_CATS + HACK_CATS
+# A city or country needs at least this many events to make a leaderboard, so no board ever points at one person in
+# a small town. GA4's own data thresholds can withhold more rows on top of this.
+MIN_GEO = 3
 
 
 def client():
@@ -195,6 +208,114 @@ def run():
             date_ranges=[DateRange(start_date=start, end_date="today")], dimension_filter=no_bots(name_filter(event, versions))))
         return int(float(r.rows[0].metric_values[0].value)) if r.rows else 0
 
+    # ---- wild cards: event counts by GA4 city / country, optionally split by notable category ----
+    def cat_in(cats):
+        return FilterExpression(filter=Filter(field_name="customEvent:category",
+            in_list_filter=Filter.InListFilter(values=cats)))
+
+    def all_of(*fs):
+        fs = [f for f in fs if f is not None]
+        return fs[0] if len(fs) == 1 else FilterExpression(and_group=FilterExpressionList(expressions=fs))
+
+    def has(*dims):
+        return custom is None or all(d in custom for d in dims)
+
+    def geo_rows(event, start, cats=None, geo="city", limit=250):
+        """eventCount of [event] per (geo, countryId[, category]) since [start] → [(name, cc, category|None, n)].
+        Rows GA4 couldn't place ('(not set)') or rolled up ('(other)') are dropped."""
+        if cats and not has("customEvent:category"):
+            return []
+        dims = [geo, "countryId"] + (["customEvent:category"] if cats else [])
+        r = report(dims, ["eventCount"], 0, limit=limit, order_metric="eventCount", start=start,
+                   dim_filter=all_of(name_filter(event), cat_in(cats) if cats else None))
+        out = []
+        for x in rows(r):
+            v = [d.value for d in x.dimension_values]
+            if v[0] in ("(not set)", "", "(other)"):
+                continue
+            out.append((v[0], "" if v[1] in ("(not set)", "") else v[1], v[2] if cats else None,
+                        int(float(x.metric_values[0].value))))
+        return out
+
+    def top_geo(geo, cats=None, limit=10):
+        """Merge geo_rows over [cats] (None = all) → top places with at least MIN_GEO events."""
+        by = {}
+        for name, cc, cat, n in geo:
+            if cats is None or cat in cats:
+                by[(name, cc)] = by.get((name, cc), 0) + n
+        out = [{"name": k[0], "cc": k[1], "count": n} for k, n in by.items() if n >= MIN_GEO]
+        out.sort(key=lambda z: -z["count"])
+        return out[:limit]
+
+    def cat_brands(start):
+        """notable_spotted per (category, brand) for the wild categories → [(category, brand, n)]."""
+        if not has("customEvent:category", "customEvent:brand"):
+            return []
+        r = report(["customEvent:category", "customEvent:brand"], ["eventCount"], 0, limit=500,
+                   order_metric="eventCount", start=start,
+                   dim_filter=all_of(name_filter("notable_spotted"), cat_in(WILD_CATS)))
+        return [(x.dimension_values[0].value, x.dimension_values[1].value, int(float(x.metric_values[0].value)))
+                for x in rows(r) if x.dimension_values[1].value not in ("(not set)", "", "(other)")]
+
+    def top_brands(br, cats, limit=8):
+        by = {}
+        for cat, brand, n in br:
+            if cat in cats:
+                by[brand] = by.get(brand, 0) + n
+        return [{"name": b, "count": n} for b, n in sorted(by.items(), key=lambda z: -z[1])][:limit]
+
+    def cat_users(start):
+        """Active users who spotted each wild category → {category: users}."""
+        if not has("customEvent:category"):
+            return {}
+        r = report(["customEvent:category"], ["activeUsers"], 0, limit=50, order_metric="activeUsers", start=start,
+                   dim_filter=all_of(name_filter("notable_spotted"), cat_in(WILD_CATS)))
+        return {x.dimension_values[0].value: int(float(x.metric_values[0].value)) for x in rows(r)}
+
+    def wild_block(label, since, range_start, notable, aircraft, counts):
+        """The wild cards. Category totals come from the notable breakdown (same window as the city boards)."""
+        def g(key, fn, default):
+            return safe(f"{label} wild {key}", fn, default)
+
+        kinds = {r["name"]: r["count"] for r in (notable or [])}
+        spots = g("cities", lambda: geo_rows("notable_spotted", since, WILD_CATS, limit=1000), [])
+        brands = g("brands", lambda: cat_brands(since), [])
+        users = g("users", lambda: cat_users(since), {})
+
+        def group(cats, city_cats=None):
+            return {"total": sum(kinds.get(c, 0) for c in cats),
+                    "kinds": [{"name": c, "count": kinds[c]} for c in sorted(cats, key=lambda c: -kinds.get(c, 0))
+                              if kinds.get(c)],
+                    "cities": top_geo(spots, city_cats or cats),
+                    "brands": top_brands(brands, cats)}
+
+        toys = group(TOY_CATS)
+        toys["users"] = users.get("ADULTTOY", 0)
+        # Two-way radios count in the police total and kinds, but they're generic, so the city board is cop gear only.
+        police = group(COP_CATS + RADIO_CATS, COP_CATS)
+        police["aircraft"] = next((r["count"] for r in (aircraft or []) if r["name"] == "POLICE"), 0)
+        air = g("aircraft cities", lambda: geo_rows("notable_aircraft", since, ["POLICE"], limit=100), [])
+        police["aircraftCities"] = top_geo(air, ["POLICE"], 5)
+        drones = g("drones", lambda: geo_rows("drone_detected", range_start, limit=60), [])
+        caps = g("captures", lambda: geo_rows("capture", range_start, geo="country", limit=60), [])
+        cracked = g("cracked", lambda: geo_rows("capture_cracked", range_start, geo="country", limit=60), [])
+        crack_by = {}
+        for name, cc, _, n in cracked:
+            crack_by[(name, cc)] = crack_by.get((name, cc), 0) + n
+        countries = top_geo(caps)
+        for z in countries:
+            z["cracked"] = crack_by.get((z["name"], z["cc"]), 0)
+        return {
+            "minCount": MIN_GEO,
+            "toys": toys,
+            "police": police,
+            "eyes": group(EYE_CATS),
+            "hackers": group(HACK_CATS),
+            "drones": {"total": counts.get("drones", 0), "cities": top_geo(drones)},
+            "captures": {"total": counts.get("captures", 0), "cracked": counts.get("cracked", 0),
+                         "countries": countries},
+        }
+
     def fun_block(days, label):
         days_start = datetime.now(timezone.utc).date() - timedelta(days=days)
         since = max(days_start, FUN_SINCE).isoformat()
@@ -217,24 +338,27 @@ def run():
                 "statsViews": f("chat stats views", lambda: brk("customEvent:src", since, "chat_stats_view", 3)),
             }
 
+        counts = {
+            "notable": n("notable", "notable_spotted"),
+            "captures": n("captures", "capture"),
+            "cracked": n("cracked", "capture_cracked"),
+            "drones": n("drones", "drone_detected"),
+            "aircraft": n("aircraft", "notable_aircraft"),
+            "secrets": n("secrets", "secret_unlock"),
+        }
+        notable = f("notable", lambda: brk("customEvent:category", since, "notable_spotted", 40))
+        aircraft = f("aircraft", lambda: brk("customEvent:category", since, "notable_aircraft", 8))
         return {
             "since": since,              # breakdowns start here (custom dimensions)
             "rangeStart": range_start,   # headline counts cover the whole selected range
-            "counts": {
-                "notable": n("notable", "notable_spotted"),
-                "captures": n("captures", "capture"),
-                "cracked": n("cracked", "capture_cracked"),
-                "drones": n("drones", "drone_detected"),
-                "aircraft": n("aircraft", "notable_aircraft"),
-                "secrets": n("secrets", "secret_unlock"),
-            },
+            "counts": counts,
             # user properties → active users per value
             "adapters": f("adapters", lambda: brk("customUser:adapter", since, limit=40)),
             "skins": f("skins", lambda: brk("customUser:skin", since, limit=20)),
             "uploadTargets": f("upload targets", lambda: brk("customUser:upload_targets", since, limit=10)),
             # event params → event counts
-            "notable": f("notable", lambda: brk("customEvent:category", since, "notable_spotted", 40)),
-            "aircraft": f("aircraft", lambda: brk("customEvent:category", since, "notable_aircraft", 8)),
+            "notable": notable,
+            "aircraft": aircraft,
             "drones": f("drones", lambda: brk("customEvent:ua_type", since, "drone_detected", 12)),
             "tools": f("tools", lambda: brk("customEvent:tool", since, "tool_opened", 40)),
             "secrets": f("secrets", lambda: brk("customEvent:kind", since, "secret_unlock", 10)),
@@ -245,6 +369,7 @@ def run():
             "devices": f("devices", lambda: devices_brk(since, 60)),
             "deviceKinds": f("device kinds", lambda: brk("customEvent:kind", since, "device_used", 8, users=True)),
             "chat": safe(f"{label} fun chat", chat, {}),
+            "wild": safe(f"{label} wild", lambda: wild_block(label, since, range_start, notable, aircraft, counts), {}),
         }
 
     def range_block(days, label):

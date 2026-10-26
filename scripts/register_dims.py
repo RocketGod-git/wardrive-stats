@@ -65,6 +65,7 @@ DIMS = [
     (EVENT, "device", "Device", "device_used device model"),
     (EVENT, "lang", "App language", "language_set language tag, or system"),
     (EVENT, "bank", "Export bank", "export: run banked after the export, true or false"),
+    (EVENT, "brand", "Notable brand", "notable_spotted maker label from the app's tables, e.g. Lovense or Flock"),
 ]
 
 SCOPE_NAME = {USER: "USER", EVENT: "EVENT"}

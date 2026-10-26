@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="stylesheet" href="style.css?v=30">
 <script>
   // Inside the Wardrive Go app (APP STATS loads this page with ?t=<cache-bust>, newer builds also ?inapp=1) the
   // store buttons are pointless — they already have the app. Website visitors never carry either.
@@ -129,6 +129,37 @@
     </div>
   </section>
 
+  <!-- Wild stats: notable finds by GA4's rough IP city -->
+  <div class="cat-head"><h2>🔥 Wild stats</h2></div>
+  <section><div class="toy-hero" id="toyHero"></div></section>
+  <section class="two">
+    <div class="panel wild hot"><h2>Horniest cities</h2><div class="rank" id="wildToyCities"></div></div>
+    <div class="panel wild hot"><h2>Most spotted toys</h2><div class="rank" id="wildToyBrands"></div></div>
+  </section>
+  <section>
+    <div class="panel wild cop">
+      <div class="cop-bar" aria-hidden="true"><i></i><i></i></div>
+      <h2>Police</h2>
+      <div class="chat-stats" id="copTiles"></div>
+      <div class="two inner">
+        <div><div class="dev-kind">Cop gear by city</div><div class="rank" id="wildCopCities"></div></div>
+        <div>
+          <div class="dev-kind">What we caught</div><div class="rank" id="wildCopKinds"></div>
+          <div class="dev-kind">Police aircraft by city</div><div class="rank" id="wildCopAir"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="two">
+    <div class="panel wild eyes"><h2>Big Brother cities</h2><div class="wild-sum" id="wildEyesSum"></div><div class="rank" id="wildEyes"></div></div>
+    <div class="panel wild hack"><h2>Hacker hangouts</h2><div class="wild-sum" id="wildHackSum"></div><div class="rank" id="wildHack"></div></div>
+  </section>
+  <section class="two">
+    <div class="panel wild drone"><h2>Drone hotspots</h2><div class="wild-sum" id="wildDroneSum"></div><div class="rank" id="wildDrones"></div></div>
+    <div class="panel wild caps"><h2>Handshake hunters</h2><div class="wild-sum" id="wildCapSum"></div><div class="rank" id="wildCaps"></div></div>
+  </section>
+  <p class="wild-note" id="wildNote"></p>
+
   <!-- Gear -->
   <div class="cat-head"><h2>🧰 Gear</h2></div>
   <section class="two">
@@ -195,6 +226,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.33.2/dist/globe.gl.min.js"></script>
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>

@@ -381,6 +381,55 @@ function renderFun(f) {
 
   renderChat(f.chat || {});
   funList('funSecrets', f.secrets, 'count', FUN_LABEL.secret);
+  renderWild(f.wild || {});
+}
+
+// ---- Wild stats: notable finds by GA4's rough IP city (the app never sends a location) ----
+const NOT_ENOUGH = 'Not enough data yet';
+const plural = (n, one, many) => `${fmt(n)} ${n === 1 ? one : (many || one + 's')}`;
+// Ranked list: rows of { name, cc?, count, note? }. Top spot gets a glowing badge.
+function rankList(id, rows, empty) {
+  const el = $(id); if (!el) return;
+  if (!rows || !rows.length) { el.innerHTML = `<div class="collecting">${empty || NOT_ENOUGH}</div>`; return; }
+  const max = Math.max(...rows.map(r => r.count || 0)) || 1;
+  el.innerHTML = rows.map((r, i) => {
+    const pct = Math.max(4, Math.round(((r.count || 0) / max) * 100));
+    return `<div class="rrow"><span class="rk">${i + 1}</span>` +
+      `<span class="nm">${esc(r.name)}${r.cc ? `<i class="cc">${esc(r.cc)}</i>` : ''}${r.note ? `<small>${esc(r.note)}</small>` : ''}</span>` +
+      `<span class="track"><span class="fill" style="width:${pct}%"></span></span><span class="ct">${fmt(r.count)}</span></div>`;
+  }).join('');
+}
+const kindRows = (kinds) => (kinds || []).map(k => ({ name: FUN_LABEL.notable(k.name), count: k.count }));
+const kindCount = (kinds, name) => ((kinds || []).find(k => k.name === name) || {}).count || 0;
+function renderWild(w) {
+  const toys = w.toys || {}, cop = w.police || {}, eyes = w.eyes || {}, hack = w.hackers || {};
+  const drones = w.drones || {}, caps = w.captures || {};
+  const top = (toys.cities || [])[0];
+  $('toyHero').innerHTML = `<div class="emo">💗</div><div><div class="n">${fmt(toys.total || 0)}</div>` +
+    `<div class="l">adult toys caught buzzing</div>` +
+    `<div class="s">${toys.users ? `found by ${plural(toys.users, 'wardriver')}` : NOT_ENOUGH}</div></div>` +
+    `<div class="side"><div class="n2">${top ? esc(top.name) : 'Nobody yet'}</div><div class="l2">horniest city</div></div>`;
+  rankList('wildToyCities', toys.cities);
+  rankList('wildToyBrands', toys.brands, 'Brands roll in as people update the app');
+
+  const radios = kindCount(cop.kinds, 'POLICE'), gear = (cop.total || 0) - radios;
+  const mini = (k, v) => `<div class="mini"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('copTiles').innerHTML = [mini('Cop gear', fmt(gear)), mini('Body cams', fmt(kindCount(cop.kinds, 'BODYCAM'))),
+    mini('Police aircraft', fmt(cop.aircraft || 0)), mini('Two-way radios', fmt(radios))].join('');
+  rankList('wildCopCities', cop.cities);
+  rankList('wildCopKinds', kindRows(cop.kinds));
+  rankList('wildCopAir', cop.aircraftCities);
+
+  $('wildEyesSum').innerHTML = `<b>${fmt(eyes.total || 0)}</b> Flock cams, ALPR, gunshot sensors and IMSI catchers`;
+  rankList('wildEyes', eyes.cities);
+  $('wildHackSum').innerHTML = `<b>${fmt(hack.total || 0)}</b> Flipper Zeros, Pineapples, Pwnagotchis and friends`;
+  rankList('wildHack', hack.cities);
+  $('wildDroneSum').innerHTML = `<b>${fmt(drones.total || 0)}</b> Remote ID drones overhead`;
+  rankList('wildDrones', drones.cities);
+  $('wildCapSum').innerHTML = `<b>${fmt(caps.total || 0)}</b> handshakes and PMKIDs grabbed, <b>${fmt(caps.cracked || 0)}</b> cracked 🔓`;
+  rankList('wildCaps', (caps.countries || []).map(c => ({ name: c.name, cc: c.cc, count: c.count,
+    note: c.cracked ? `🔓 ${fmt(c.cracked)}` : '' })));
+  $('wildNote').textContent = `Cities are Google's rough guess from the phone's IP. A spot needs ${w.minCount || 3}+ finds to make a board.`;
 }
 function renderChat(ch) {
   const el = $('funChat'); if (!el) return;
