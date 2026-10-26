@@ -78,8 +78,10 @@ function list(el, rows, nameKey, countKey, unit) {
 }
 
 // ---- state ----
-let DATA = null, RANGE = '28d';
-const RANGE_ORDER = [['1d', '24h'], ['7d', '7 days'], ['28d', '28 days'], ['90d', '90 days']];
+// One time filter for the whole page. 'live' = the globe shows who's in the app right now, the cards show the last 24 h.
+let DATA = null, RANGE = 'live';
+try { RANGE = localStorage.getItem('statsRange') || 'live'; } catch (e) {}
+const RANGE_ORDER = [['live', 'Live'], ['1d', '24h'], ['7d', '7 days'], ['28d', '28 days'], ['90d', '90 days']];
 
 function legacyRange(d) {   // backward-compat for the pre-"ranges" schema (brief deploy gap)
   return { totals: { active: (d.active || {}).d28, events: (d.totals28d || {}).events, sessions: (d.totals28d || {}).sessions,
@@ -90,6 +92,7 @@ function legacyRange(d) {   // backward-compat for the pre-"ranges" schema (brie
 }
 function currentRange() {
   if (DATA.ranges) {
+    if (RANGE === 'live') return DATA.ranges['1d'] || DATA.ranges['28d'] || {};
     if (!DATA.ranges[RANGE]) RANGE = DATA.ranges['28d'] ? '28d' : Object.keys(DATA.ranges)[0];
     return DATA.ranges[RANGE] || {};
   }
@@ -147,10 +150,14 @@ function renderRealtime(rt) {
 function buildRangeChips(d) {
   const el = $('rangeSel');
   if (!d.ranges) { el.innerHTML = ''; return; }
-  const avail = RANGE_ORDER.filter(([k]) => d.ranges[k]);
-  if (!avail.some(([k]) => k === RANGE)) RANGE = d.ranges['28d'] ? '28d' : (avail[0] || ['28d'])[0];
+  const avail = RANGE_ORDER.filter(([k]) => k === 'live' || d.ranges[k]);
+  if (!avail.some(([k]) => k === RANGE)) RANGE = 'live';
   el.innerHTML = avail.map(([k, lbl]) => `<button class="rchip${k === RANGE ? ' on' : ''}" data-r="${k}">${lbl}</button>`).join('');
-  el.querySelectorAll('.rchip').forEach(b => b.onclick = () => { RANGE = b.dataset.r; buildRangeChips(DATA); renderRange(); });
+  el.querySelectorAll('.rchip').forEach(b => b.onclick = () => {
+    RANGE = b.dataset.r;
+    try { localStorage.setItem('statsRange', RANGE); } catch (e) {}
+    buildRangeChips(DATA); renderRange();
+  });
 }
 
 function renderRange() {
@@ -472,21 +479,11 @@ function drawDow(wd) {
     data: { labels: wd.map(d => d.d), datasets: [{ data: wd.map(d => d.users), backgroundColor: wd.map(d => d.users === peak ? ACCENT : 'rgba(22,192,255,.5)'), borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: baseAxis(), y: baseAxis() } } });
 }
-// The globe shows who's in the app right now (default) or the selected window; the choice is remembered.
-let GLOBE_MODE = 'live';
-try { GLOBE_MODE = localStorage.getItem('globeMode') || 'live'; } catch (e) {}
+// The globe follows the page's one time filter: Live = who's in the app right now, otherwise the selected window.
 function renderGlobe() {
-  const live = GLOBE_MODE === 'live', r = currentRange();
+  const live = RANGE === 'live', r = currentRange();
   const el = $('globeSel');
-  if (el) {
-    el.innerHTML = [['live', 'Live'], ['range', r.label || '28 days']].map(([k, lbl]) =>
-      `<button class="rchip${(k === 'live') === live ? ' on' : ''}" data-g="${k}">${lbl}</button>`).join('');
-    el.querySelectorAll('.rchip').forEach(b => b.onclick = () => {
-      GLOBE_MODE = b.dataset.g;
-      try { localStorage.setItem('globeMode', GLOBE_MODE); } catch (e) {}
-      renderGlobe();
-    });
-  }
+  if (el) el.textContent = live ? '● live' : ((RANGE_ORDER.find(([k]) => k === RANGE) || [])[1] || '');
   drawGlobe(live ? ((DATA.realtime || {}).countries || []) : (r.countries || []));
 }
 
@@ -627,7 +624,7 @@ function pollLive() {
       LIVE_OK = true;
       DATA.realtime = rt;
       renderRealtime(rt);
-      if (GLOBE_MODE === 'live') renderGlobe();
+      if (RANGE === 'live') renderGlobe();
       $('stamp').textContent = 'live';
     })
     .catch(() => {
