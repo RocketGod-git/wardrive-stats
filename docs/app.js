@@ -160,8 +160,17 @@ function buildRangeChips(d) {
   });
 }
 
+// Every section below the globe uses the Window filter: each section header says which window it shows.
+function windowLabel() {
+  return RANGE === 'live' ? 'last 24h' : ((RANGE_ORDER.find(([k]) => k === RANGE) || [])[1] || '');
+}
 function renderRange() {
   const r = currentRange(), t = r.totals || {};
+  document.querySelectorAll('.cat-head').forEach(h => {
+    let w = h.querySelector('.win');
+    if (!w) { w = document.createElement('span'); w.className = 'win'; h.appendChild(w); }
+    w.textContent = windowLabel();
+  });
   const plats = r.platforms || [];
   // A platform GA4 hasn't processed into this window yet (a new app stream takes up to a day) shows its realtime count.
   const rtPlats = (DATA.realtime || {}).platforms || [];
