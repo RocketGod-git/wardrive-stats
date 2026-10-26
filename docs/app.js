@@ -325,6 +325,13 @@ function extRows(rows) {
 // out here.
 const DEVICE_KINDS = [['board', 'WardriveESP boards'], ['biscuit', 'Biscuit'], ['mesh', 'Mesh radios'],
   ['sdr', 'SDRs'], ['serial', 'Serial boards']];
+// Official Biscuits report a bare model ("Ultra") and older apps prefixed every model with "Biscuit "; DIY builds of the
+// Biscuit firmware name their own board ("C5-Dev Biscuit", "Heltec V3 WDG Mesh"), so drop the prefix for those.
+function biscuitLabel(name) {
+  const rest = String(name || '').replace(/^Biscuit\s+/i, '');
+  if (rest === String(name || '')) return name;
+  return (/biscuit/i.test(rest) || !/^(ultra|pro|crumb|mini|v\d+)$/i.test(rest)) ? rest : name;
+}
 function renderDevices(devices, kinds) {
   const el = $('funDevices'); if (!el) return;
   const rows = (devices || []).filter(r => r.kind !== 'wifi_adapter');
@@ -342,7 +349,13 @@ function renderDevices(devices, kinds) {
       `<div class="list" id="funDev_${esc(k)}"></div></div>`;
   }).join('');
   groups.forEach(([k]) => {
-    const g = rows.filter(r => r.kind === k).sort((a, b) => (b.users || 0) - (a.users || 0));
+    // Merge rows that differ only by the label fix below (older apps doubled the Biscuit prefix).
+    const merged = new Map();
+    rows.filter(r => r.kind === k).forEach(r => {
+      const nm = k === 'biscuit' ? biscuitLabel(r.name) : r.name;
+      merged.set(nm, (merged.get(nm) || 0) + (r.users || 0));
+    });
+    const g = [...merged.entries()].map(([name, users]) => ({ name, users })).sort((a, b) => b.users - a.users);
     if (g.length) list($('funDev_' + k), g.map(r => ({ name: esc(r.name), n: r.users })), 'name', 'n');
   });
 }
