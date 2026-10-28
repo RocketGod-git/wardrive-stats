@@ -642,7 +642,8 @@ function load() {
     });
 }
 load();
-setInterval(load, 90000);   // re-poll the static JSON every 90s (no GA4 cost)
+// re-poll the static JSON every 90s (no GA4 cost), only while the tab is visible
+setInterval(() => { if (!document.hidden) load(); }, 90000);
 
 // Realtime comes from the Cloudflare Worker (GA4 Realtime API, cached ~15 s at the edge); the snapshot's realtime
 // block is the fallback when it can't be reached (e.g. the github.io mirror before the Worker is deployed).
@@ -665,7 +666,9 @@ function pollLive() {
     });
 }
 pollLive();
-setInterval(pollLive, 15000);
+// Every 30s while the tab is visible. A hidden tab doesn't poll at all, and coming back refreshes right away.
+setInterval(() => { if (!document.hidden) pollLive(); }, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollLive(); load(); } });
 
 // ---- secret-codes modal ----
 (function () {

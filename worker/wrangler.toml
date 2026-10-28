@@ -10,3 +10,8 @@ routes = [
 # Secrets (set once, never committed):
 #   npx wrangler secret put GA4_SA            (paste the service-account JSON)
 #   npx wrangler secret put GA4_PROPERTY_ID   (the numeric GA4 property id)
+
+# Keep 1% of request logs. Nothing reads them, and full logging used up the free daily allowance.
+[observability]
+enabled = true
+head_sampling_rate = 0.01
