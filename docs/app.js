@@ -323,7 +323,7 @@ function extRows(rows) {
 // Gear: the app's device_used event, one row per device model, grouped by kind.
 // Wi-Fi adapters have their own panel (from the adapter property, which every app version reports), so they're left
 // out here.
-const DEVICE_KINDS = [['board', 'WardriveESP boards'], ['biscuit', 'Biscuit'], ['mesh', 'Mesh radios'],
+const DEVICE_KINDS = [['board', 'WardriveESP boards'], ['biscuit', 'Biscuit'], ['piglet', 'Piglet'], ['mesh', 'Mesh radios'],
   ['sdr', 'SDRs'], ['serial', 'Serial boards']];
 // Official Biscuits report a bare model ("Ultra") and older apps prefixed every model with "Biscuit "; DIY builds of the
 // Biscuit firmware name their own board ("C5-Dev Biscuit", "Heltec V3 WDG Mesh"), so drop the prefix for those.
